@@ -3,8 +3,8 @@ ntrajs 5
 Einc 5
 inclination 0
 azimuth 60
-nsteps 10000
-wstep 0 1
+nsteps 100
+wstep -1 1
 projectile H   1.0079  emt 7 emt127_H.nml  lan  1
-conf mxt '~/git/mdhag/md/mdhag_v1/conf' 5
+conf mxt '/home/sjanke/git/md_tian/conf' 5
 pip 1 top

@@ -18,7 +18,7 @@ subroutine full_conf(slab, teil, itraj)
     type(atoms) :: slab, teil
     integer :: ios, itraj
     character(len=8) str
-    character(len=80) filename
+    character(len=90) filename
 
     write(str,'(I8.8)') save_counter
 
@@ -76,7 +76,7 @@ subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int, imp, rbounce)
     real(8), dimension(:,:,:), allocatable :: rbounce
     integer, dimension(:), allocatable   :: col_int, imp
     character(len=8) str
-    character(len=80) filename
+    character(len=90) filename
 
     write(str,'(I8.8)') itraj
     filename = 'traj/mxt_fin'//str//'.dat'
@@ -132,7 +132,7 @@ subroutine out_detail(output_info, n, itraj)
     integer :: n, i
     integer :: itraj
     character(len=8) str
-    character(len=80) filename
+    character(len=90) filename
 
     write(str,'(I8.8)') itraj
     filename = 'traj/mxt_trj'//str//'.dat'
@@ -161,15 +161,27 @@ function sartre(itraj)
     logical :: sartre
     integer :: itraj, exists
     character(len=8) str
+    character(len=80) filename, filenamen
 
-    write(str,'(I8.8)') itraj+1
+    write(str,'(I8.8)') itraj
 
 
-    if (wstep(1) == -1) inquire(file='traj/mxt_fin'//str//'.dat',exist=exists)
-    if (wstep(1) ==  0) inquire(file='traj/mxt_trj'//str//'.dat',exist=exists)
+    if (wstep(1) == -1) filename='traj/mxt_fin'//str//'.dat'
+    if (wstep(1) == 0) filename='traj/mxt_trj'//str//'.dat'
+    inquire(file=filename ,exist=exists)
 
     if (exists) then
-        sartre = .true.
+        write(str,'(I8.8)') itraj+1
+        if (wstep(1) == -1) filenamen='traj/mxt_fin'//str//'.dat'
+        if (wstep(1) == 0) filenamen='traj/mxt_trj'//str//'.dat'
+        inquire(file=filenamen ,exist=exists)
+        if (exists) then
+            sartre = .true.
+        else
+            sartre = .false.
+            filename = 'rm -f '//trim(filename)
+            call system(filename)
+        end if
     else
         sartre = .false.
     end if

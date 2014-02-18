@@ -5,10 +5,10 @@ inclination 0
 azimuth 0
 Tsurf 300
 step 0.1
-nsteps 11000
-wstep 0 1
-projectile H   1.0079  emt 7 stroem.00.H.nml  ver  1
-lattice   Au 196.96657 emt 7 stroem.00.Au.nml ver -1
+nsteps 100
+wstep  1 10
+projectile H   1.0079  emt 7 emt127_H.nml  ver  1
+lattice   Au 196.96657 emt 7 emt127_Au.nml ver -1
 celldim 2 2 4
 rep 2
 conf POSCAR au111_2x2x4.POSCAR
