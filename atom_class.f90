@@ -1,14 +1,13 @@
 module atom_class
     !
     ! Purpose:
-    !           This module containes the definitions of all the types and all
-    !           constants that are used in the program.
+    !           This module contains definitions of user types and all constants
     !
-    ! Date          Author          History of Revison
-    ! ====          ======          ==================
-    ! 07.01.2014    Sascha&Svenja   Dan's data structure
-    ! 09.10.2013    Sascha&Svenja   Original
-    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka	
+    !			Dan J. Auerbach
 
     implicit none
     public         ! public for performance in accessing components

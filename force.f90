@@ -1,16 +1,19 @@
 module force
     !
     ! Purpose:
-    !           Gather all potentials to calculate the forces for MD
+    !           Calculates energy and forces
     !           MAY THE FORCE BE WITH YOU!
-    ! Definition of Zero of Energy:
-    !                               The particle is at infinite distance to the
-    !                               lattice.
     !
-    ! Date          Author          History of Revison
-    ! ====          ======          ==================
-    ! 07.01.2014    Sascha&Svenja   subrutines emt and emt_e implemented
-    ! 09.10.2013    Sascha&Svenja   Original
+    ! Implemented Force Fields:
+    !				EMT (effective medium theory)
+    ! Definition of Zero of Energy:
+    !                               A projectile is at infinite distance from the surface
+    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka	
+    !			Dan J. Auerbach
     !
     use atom_class
     use md_init

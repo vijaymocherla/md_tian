@@ -1,4 +1,14 @@
 module output
+    !
+    ! Purpose :
+    !           Contains output routines
+    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka	
+    !			Dan J. Auerbach
+
 use open_file
 use atom_class
 use md_init

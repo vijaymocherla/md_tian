@@ -1,4 +1,13 @@
 module open_file
+    !
+    ! Purpose:
+    !           This module contains routines to open files smoothly
+    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka	
+    !			Dan J. Auerbach
 
     interface
         subroutine open_for_read(lun, file_name)

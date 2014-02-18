@@ -1,11 +1,12 @@
-program mdhag
+program md_tian
     ! Purpose:
     !       Do molecular dynamics calculations with the EMT potential.
     !
-    ! Date          Author          History of Modification
-    ! ====          ======          =======================
-    ! 01.10.2013    Sascha&Svenja   Original
-    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka	
+    !			Dan J. Auerbach
     !
 use atom_class
 use md_init
@@ -221,4 +222,4 @@ deallocate(output_info)
 deallocate(col_end, col_start)
 deallocate(rmin_p, pars_l)
 
-end program mdhag
+end program md_tian

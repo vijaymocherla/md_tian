@@ -1,17 +1,17 @@
 module md_init
-!
-! Purpose:
-!    prepare the system for the md simulations
-!    It should be able to do the following things:
-!      1. Read in initial configuration
-!      2. Construct simulations cell from the read-in configuration
-!      3. Assign initial thermal velocities to atoms
-!
-! Date          Author          History of Revision
-! ====          ======          ===================
-!01.10.2013     Sascha&Svenja   Implementation of 1.
-!09.10.2013     Sascha&Svenja   Implementation of 2.
-!
+    !
+    ! Purpose:
+    !    prepare (almost) everything for md simulations.
+    !    Should be able to do the following things:
+    !      1. Read in an initial configuration
+    !      2. Construct simulations cell from the read-in configuration
+    !      3. Assign initial thermal velocities to atoms
+    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka	
+    !			Dan J. Auerbach
 
     use atom_class
     use open_file
