@@ -1,0 +1,10 @@
+&lattice_pars_list
+ LATTICE_PARS%NAME="Au"
+ LATTICE_PARS%ETA2=  3.1634d0         ! A^-1
+ LATTICE_PARS%N0=  0.0474408d0        ! A^-3
+ LATTICE_PARS%E0=  -3.8d0             ! eV
+ LATTICE_PARS%LAMBDA=  4.12338d0      ! A^-1
+ LATTICE_PARS%V0=  2.321d0            ! eV
+ LATTICE_PARS%KAPPA=  5.42918d0       ! A^-1
+ LATTICE_PARS%S0=  1.64174d0          ! A
+/

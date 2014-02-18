@@ -1,0 +1,10 @@
+&particle_pars_list
+ PARTICLE_PARS%NAME="H"
+ PARTICLE_PARS%ETA2=  5.4254d0         ! A^-1
+ PARTICLE_PARS%N0=  0.182205d0         ! A^-3
+ PARTICLE_PARS%E0=  -2.371d0           ! eV
+ PARTICLE_PARS%LAMBDA=  7.72709d0      ! A^-1
+ PARTICLE_PARS%V0=  0.427d0            ! eV
+ PARTICLE_PARS%KAPPA=  8.86282d0       ! A^-1
+ PARTICLE_PARS%S0=  0.680411d0         ! A
+/
