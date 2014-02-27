@@ -80,7 +80,7 @@ subroutine simbox_init(slab, teil)
     character(len= 1) :: coord_sys
 
     integer :: pos1, ios = 0, line = 0
-    integer :: rep = 2  ! number of repetition layers arounf an original cell
+    integer :: rep = 2  ! number of repetition layers around an original cell
     integer :: n_l0, n_l=1, n_p, n_p0=0, itemp
     integer :: i, j, k, l, s, r
     integer :: randk = 13

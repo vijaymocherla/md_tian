@@ -212,7 +212,8 @@ do itraj = start_tr, ntrajs+start_tr-1
     !timing
     !call cpu_time(fin)
     !print *, fin - start, " seconds"
-
+    call open_for_write(111,'config.dat')
+    write(111,'(3f15.5)') slab%r
 end do ! trajectories
 
 if (allocated(pars_p)) deallocate(pars_p)
