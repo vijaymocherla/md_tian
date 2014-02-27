@@ -6,7 +6,7 @@ module atom_class
     ! Date          	Author          	History of Revison
     ! ====          	======          	==================
     ! 18.02.2014    	Svenja M. Janke		Original
-    !			Sascha Kandratsenka	
+    !			Sascha Kandratsenka
     !			Dan J. Auerbach
 
     implicit none
@@ -22,6 +22,16 @@ module atom_class
     real(8), parameter          :: hbar     = 0.6582119280967d0
     real(8), parameter          :: twelfth  = 1./12.
     integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
+    real(8), parameter          :: e_max = 20.0d0
+
+    character(len=80), parameter:: fit_dir    = 'fitdata/'
+    character(len=80), parameter:: fit_eq     = 'energy_eq.dat'
+    character(len=80), parameter:: aimd_pos   = 'XDATCAR.dat'
+    character(len=80), parameter:: aimd_e     = 'analyse.dat'
+    character(len=80), parameter:: parsname(7)= (/'eta2=','n0=','E0=',&
+                                                'lambda=','V0=','kappa=','s0='/)
+
+
 
     ! highest permitted projectile position
     real(8), parameter          :: proj_upgone = 6.1

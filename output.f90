@@ -6,7 +6,7 @@ module output
     ! Date          	Author          	History of Revison
     ! ====          	======          	==================
     ! 18.02.2014    	Svenja M. Janke		Original
-    !			Sascha Kandratsenka	
+    !			Sascha Kandratsenka
     !			Dan J. Auerbach
 
 use open_file
@@ -20,12 +20,13 @@ logical :: overwrite = .true.
 
 contains
 
-subroutine full_conf(slab, teil, itraj)
+subroutine full_conf(slab, teil, itraj,Eref)
     !
     ! Purpose:
     !           Prints out information necessary to continue simulation
 
     type(atoms) :: slab, teil
+    real(8) :: Eref
     integer :: ios, itraj
     character(len=8) str
     character(len=90) filename
@@ -41,7 +42,7 @@ subroutine full_conf(slab, teil, itraj)
 
     write(753) itraj        ! Number of trajectory
     write(753) step         ! time step
-    write(753) Epot
+    write(753) Epot, Eref
     write(753) Tsurf        ! Surface temperature
     ! number of species
     if (teil%n_atoms .ne. 0) then
@@ -73,14 +74,14 @@ subroutine full_conf(slab, teil, itraj)
 
 end subroutine full_conf
 
-subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int, imp, rbounce)
+subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbounce)
     !
     ! Purpose :
     !           Prints out final information at end of trajectory
     !
 
     type(atoms) :: slab, teil
-    real(8) :: Epot, Ekin_l, Ekin_p
+    real(8) :: Epot, Ekin_l, Ekin_p, Eref
     integer :: itraj, q, i
     real(8), dimension(:,:), allocatable :: rmin_p
     real(8), dimension(:,:,:), allocatable :: rbounce
@@ -103,6 +104,7 @@ subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int, imp, rbounce)
     write(753,'(A14,f15.5)') 'E_kin_p (eV) = ', Ekin_p
     write(753,'(A14,f15.5)') 'E_kin_l (eV) = ', Ekin_l
     write(753,'(A14,f15.5)') 'E_pot   (eV) = ', Epot
+    write(753,'(A14,f15.5)') 'E_ref   (eV) = ', Eref
     write(753,'(A14,f15.5)') 'E_total (eV) = ', Epot + Ekin_l + Ekin_p
     write(753,'(A8)')'r_p (A):'
     write(753,'(3f15.5)') teil%r
@@ -132,7 +134,7 @@ subroutine out_short(slab, teil,Epot, itraj, q, rmin_p, col_int, imp, rbounce)
 
 end subroutine out_short
 
-subroutine out_detail(output_info, n, itraj)
+subroutine out_detail(output_info, n, itraj,Eref)
     !
     ! Purpose :
     !           Prints out a lot of trajectory information along trajectory
@@ -143,6 +145,7 @@ subroutine out_detail(output_info, n, itraj)
     integer :: itraj
     character(len=8) str
     character(len=90) filename
+    real(8) :: Eref
 
     write(str,'(I8.8)') itraj
     filename = 'traj/mxt_trj'//str//'.dat'
@@ -154,6 +157,7 @@ subroutine out_detail(output_info, n, itraj)
     do i = 1, n
         write(753,'(10000e15.5)') i*wstep(2)*step, output_info(:,i)
     end do
+    write(753,'(A15,e15.5)') 'E_ref (eV) = ', Eref
 
     close(753)
 
