@@ -1,17 +1,19 @@
-program mdhag
+program md_tian
     ! Purpose:
     !       Do molecular dynamics calculations with the EMT potential.
     !
-    ! Date          Author          History of Modification
-    ! ====          ======          =======================
-    ! 01.10.2013    Sascha&Svenja   Original
-    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka
+    !			Dan J. Auerbach
     !
 use atom_class
 use md_init
 use force
 use mdalgo
 use output
+use fit4_tian
 
 implicit none
 
@@ -28,6 +30,7 @@ integer, dimension(:), allocatable   :: col_start, col_end  ! collision time
 integer, dimension(:), allocatable   :: imp, q_imp          ! collision number
 logical :: exit_key, imp_switch
 real(8), dimension(:), allocatable :: eed, eed_prec          ! embedded electron density for projectile
+real(8) :: Eref                                              ! reference energy
 
 !timing
 !real(8) :: start, fin
@@ -51,6 +54,25 @@ allocate(output_info(ndata,nwrites))
 allocate(tock(3,teil%n_atoms))
 allocate(imp(teil%n_atoms), q_imp(teil%n_atoms))
 allocate(eed(teil%n_atoms),eed_prec(teil%n_atoms))
+
+!------------------------------------------------------------------------------
+!
+!                    CALCULATE THE REFERENCE ENERGY
+!
+!------------------------------------------------------------------------------
+if (confname == 'poscar') then
+    if (teil%n_atoms > 0) then
+        call emt_e(slab,teil)
+    else
+        call emt1_e(slab)
+    end if
+    Eref = Epot
+end if
+
+if (confname == 'fit') then
+    call fit(slab,teil)
+    stop
+end if
 
 !------------------------------------------------------------------------------
 !
@@ -85,7 +107,7 @@ do itraj = start_tr, ntrajs+start_tr-1
     q_imp       = 0
     eed_prec     = 0.0d0
 
-    if (confname == 'mxt') call traj_init(slab, teil)
+    if (confname == 'mxt') call traj_init(slab, teil, Eref)
 
     if (teil%n_atoms > 0) then
         call particle_init(teil)
@@ -104,7 +126,8 @@ do itraj = start_tr, ntrajs+start_tr-1
     slab%au = slab%ao
 
     ! save initial state
-    if (wstep(1)==-1) call out_short(slab, teil, Epot, itraj, 0, rmin_p, col_end, imp, rbounce)
+    if (wstep(1)==-1) call out_short(slab, teil, Epot, Eref, &
+                                     itraj, 0, rmin_p, col_end, imp, rbounce)
     tock = teil%v
 
     !print *, 'ntraj', itraj
@@ -187,7 +210,7 @@ do itraj = start_tr, ntrajs+start_tr-1
                     ndata = ndata + 1
 
                 case default ! full configuration of system
-                    if (q > wstep(1)) call full_conf(slab, teil,itraj)
+                    if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)
 
             end select
 
@@ -205,8 +228,15 @@ do itraj = start_tr, ntrajs+start_tr-1
 
     col_end = col_end - col_start
     ! final state
-    if (wstep(1)==-1) call out_short (slab, teil, Epot, itraj, q, rmin_p, col_end, imp, rbounce)
-    if (wstep(1)== 0) call out_detail(output_info, ndata, itraj)
+    if (wstep(1)==-1) call out_short (slab, teil, Epot, Eref, itraj, q, rmin_p, &
+                                      col_end, imp, rbounce)
+    if (wstep(1)== 0) call out_detail(output_info, ndata, itraj, Eref)
+    if (wstep(1)== 0) then
+        call open_for_write(797,'/home/sjanke/git/md_tian/config.dat')
+        write(797,*) slab%r
+        write(797,*) teil%r
+        close(797)
+    end if
 
 
     !timing
@@ -222,4 +252,4 @@ deallocate(output_info)
 deallocate(col_end, col_start)
 deallocate(rmin_p, pars_l)
 
-end program mdhag
+end program md_tian

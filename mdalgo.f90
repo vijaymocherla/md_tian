@@ -1,12 +1,14 @@
 module mdalgo
-!
-!
-! Purpose :
-!           Contains all the algorithms needed for the md procedure
-!
-! Date          Author              History of Revision
-! ====          ======              ===================
-! 23.10.2013    Sascha & Svenja     Original
+    !
+    !
+    ! Purpose :
+    !           Contains propagation algorithms
+    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka	
+    !			Dan J. Auerbach
 
     use atom_class
     use useful_things

@@ -1,14 +1,13 @@
 module atom_class
     !
     ! Purpose:
-    !           This module containes the definitions of all the types and all
-    !           constants that are used in the program.
+    !           This module contains definitions of user types and all constants
     !
-    ! Date          Author          History of Revison
-    ! ====          ======          ==================
-    ! 07.01.2014    Sascha&Svenja   Dan's data structure
-    ! 09.10.2013    Sascha&Svenja   Original
-    !
+    ! Date          	Author          	History of Revison
+    ! ====          	======          	==================
+    ! 18.02.2014    	Svenja M. Janke		Original
+    !			Sascha Kandratsenka
+    !			Dan J. Auerbach
 
     implicit none
     public         ! public for performance in accessing components
@@ -21,8 +20,18 @@ module atom_class
     real(8), parameter          :: pi       = 3.14159265359d0
     real(8), parameter          :: kB       = 8.61733238496d-5
     real(8), parameter          :: hbar     = 0.6582119280967d0
-    real(8), parameter          :: twelfth  = 1./12.
+    real(8), parameter          :: twelfth  = 1.0d0/12.0d0
     integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
+    real(8), parameter          :: e_max = 20.0d0
+
+    character(len=80), parameter:: fit_dir    = 'fitdata/'
+    character(len=80), parameter:: fit_eq     = 'energy_eq.dat'
+    character(len=80), parameter:: aimd_pos   = 'XDATCAR.dat'
+    character(len=80), parameter:: aimd_e     = 'analyse.dat'
+    character(len=80), parameter:: parsname(7)= (/'eta2=','n0=','E0=',&
+                                                'lambda=','V0=','kappa=','s0='/)
+
+
 
     ! highest permitted projectile position
     real(8), parameter          :: proj_upgone = 6.1
