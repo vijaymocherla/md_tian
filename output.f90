@@ -164,6 +164,65 @@ subroutine out_detail(output_info, n, itraj,Eref)
 
 end subroutine out_detail
 
+subroutine out_all(slab, teil, itraj, Eref)
+    !
+    ! Purpose:
+    !           Prints out all the geometries along the trajectory.
+    !           Structure is the same as for full_conf, only a dat-file is created.
+    !           Be careful. This option will take up a lot of space.
+    !
+
+    type(atoms) :: slab, teil
+    real(8) :: Eref
+    integer :: ios, itraj
+    character(len=8) str
+    character(len=90) filename
+
+    write(str,'(I8.8)') save_counter
+
+    filename = 'conf/mxt_conf'//str//'.dat'
+
+    open (753,file=filename, status='replace', &
+                    action='write', iostat=ios)
+
+    ! Here comes the output
+
+    write(753,*) itraj        ! Number of trajectory
+    write(753,*) step         ! time step
+    write(753,*) Epot, Eref
+    write(753,*) Tsurf        ! Surface temperature
+    ! number of species
+    if (teil%n_atoms .ne. 0) then
+        write(753,*) 2
+    else
+        write(753,*) 1
+    end if
+    ! name, number of atoms, no of fixed atoms
+    ! masses, potential, number of parameters, file name parameters, paramter values
+    ! propagator
+    write(753,*) name_l, slab%n_atoms, slab%nofix,&
+               mass_l, pot_l, npars_l,key_l
+    write(753,*) pars_l, md_algo_l
+
+    write(753,*) a_lat        ! lattice constant
+    write(753,*) cell_mat     ! Cell matrix
+    write(753,*) cell_imat    ! inverse cell matrix
+    write(753,*) slab%r, slab%v, slab%a, slab%dens
+    if (teil%n_atoms .ne. 0) then
+        write(753,*) name_p, teil%n_atoms, teil%nofix, &
+                   mass_p, pot_p, npars_p, key_p
+        write(753,*) pars_p, md_algo_p
+        write(753,*) teil%r, teil%v, teil%a, teil%dens
+    end if
+
+
+    close(753)
+    filename = 'tar -zcf '//filename
+    call system(filename)
+    save_counter = save_counter+1
+
+end subroutine out_all
+
 function sartre(itraj)
     !
     ! Purpose:
@@ -173,7 +232,8 @@ function sartre(itraj)
     !
 
     logical :: sartre
-    integer :: itraj, exists
+    integer :: itraj
+    logical :: exists
     character(len=8) str
     character(len=80) filename, filenamen
 

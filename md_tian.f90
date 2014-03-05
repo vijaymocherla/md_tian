@@ -209,8 +209,10 @@ do itraj = start_tr, ntrajs+start_tr-1
                     output_info(5+4*j:4+7*j,nwrites) = reshape(teil%v,(/3*j/))
                     ndata = ndata + 1
 
-                case default ! full configuration of system
+                case(1) ! full configuration of system
                     if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)
+                case(2)
+                    if (q > wstep(1)) call out_all(slab, teil,itraj,Eref)
 
             end select
 
@@ -231,12 +233,12 @@ do itraj = start_tr, ntrajs+start_tr-1
     if (wstep(1)==-1) call out_short (slab, teil, Epot, Eref, itraj, q, rmin_p, &
                                       col_end, imp, rbounce)
     if (wstep(1)== 0) call out_detail(output_info, ndata, itraj, Eref)
-    if (wstep(1)== 0) then
-        call open_for_write(797,'/home/sjanke/git/md_tian/config.dat')
-        write(797,*) slab%r
-        write(797,*) teil%r
-        close(797)
-    end if
+!    if (wstep(1)== 0) then
+!        call open_for_write(797,'/home/sjanke/git/md_tian/config.dat')
+!        write(797,*) slab%r
+!        write(797,*) teil%r
+!        close(797)
+!    end if
 
 
     !timing

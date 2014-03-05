@@ -34,43 +34,48 @@ module md_init
                                     !                           3 - langevin
                                     !                           4 - langevin (series)
     integer :: md_algo_p    = 0     !  0 means no projectile
+    logical :: Tsurf_key = .false., md_algo_l_key = .false., md_algo_p_key = .false.
     integer :: pip_sign     =-1     ! -1 : read in from configuration file. Default.
                                     !  0 : assign random positions
                                     !  1 : coordinates for projectile via key word: top, fcc, hcp
                                     !  2 : take positions from file
-    real(8) :: height = 6.0d0       ! Read-in height projectile
-    integer :: n_confs = 1          ! Number of configurations to read in
     integer, dimension(2) :: wstep   = (/-1,1/)   ! way and interval to save data
+                                    ! (1) = -1 specifies initial and end conditions. mxt_fin.
+                                    !        0 in wstep(2) intervals, information on traj. mxt_trj
+                                    !        1 all the information in wstep(2) steps, binary file
+                                    !        2 Sames a 1, only into non-binary file. Takes a lot of space.
+                                    !           Reconsider
+    real(8) :: height = 6.0d0       ! Read-in height projectile
+    real(8) :: Epot = 0.0d0
     real(8) :: a_lat                ! lattice constant
-    integer :: rep = 2  ! number of repetition layers arounf an original cell
+    real(8),dimension(3,3) :: cell_mat, cell_imat ! simulation cell matrix and its inverse
+
+    character(len=80) :: name_l, pot_l, key_l
     character(len=80) :: name_p = 'Elerium'
     character(len=80) :: key_p_pos = 'top'
     character(len=80) :: pot_p = 'emt'
     character(len=80) :: key_p = 'empty'
-    integer :: ipc ! number of parameters to be held constant during fit
-    integer, dimension(20) :: ibt = 0 ! Integer Array containing the subscripts of parameters to be held constant.
-    integer :: max_iterations = 10 ! maximum number of iterations
-    real(8) :: mass_p = 1.0d0
+    integer :: npars_l ! number of parameters for lattice
     integer :: npars_p = 0
     integer :: np_atoms, nl_atoms
-    character(len=80) :: name_l, pot_l, key_l
-    character(len= 7) :: confname
-    integer :: npars_l
-    integer, dimension(3) :: celldim=(/2,2,4/)  ! input cell structure
     real(8) :: mass_l
-    real(8) :: Epot = 0.0d0
-    character(len=4) :: fitnum
-
-    real(8),dimension(3,3) :: cell_mat, cell_imat ! simulation cell matrix and its inverse
+    real(8) :: mass_p = 1.0d0
     real(8), dimension(:), allocatable :: pars_l, pars_p ! potential parameters
+
     character(len=80) :: confname_file
+    character(len= 7) :: confname
+    integer :: n_confs = 1          ! Number of configurations to read in
 
-    logical :: Tsurf_key = .false., md_algo_l_key = .false., md_algo_p_key = .false.
-
-    ! Fit stuctures
+    ! Fit stuctures or fit-related parameters
     real(8), dimension(:,:,:), allocatable :: x_all
     real(8), dimension(:),     allocatable :: y_all
     real(8) :: evasp = -24.995689d0 ! A value for Au 2x2
+    integer :: rep = 2  ! number of repetition layers arounf an original cell
+    integer :: ipc ! number of parameters to be held constant during fit
+    integer, dimension(20) :: ibt = 0 ! Integer Array containing the subscripts of parameters to be held constant.
+    integer :: max_iterations = 10 ! maximum number of iterations
+    integer, dimension(3) :: celldim=(/2,2,4/)  ! input cell structure
+    character(len=4) :: fitnum      ! number of fit
 
 contains
 
@@ -300,6 +305,10 @@ call random_seed(size=randk)
     end if
 
     close(38)
+
+    if (wstep(1) == 2) then
+        print *, 'Warning: You are saving all the geometries along the trajectory.'
+        print *, '         This is storage demanding.'
 
 !------------------------------------------------------------------------------
 !                       READ IN CONFIGURATION
