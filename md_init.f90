@@ -267,6 +267,22 @@ call random_seed(size=randk)
                                                 at 6.0 A.'
                             pip_sign = 1
                         end if
+                    case(3) ! Place the atom really at nice, random position on or in surface
+                            ! and set velocities to slab temperature
+                        read(buffer, *, iostat=ios) key_p_pos, height
+                        if (ios .ne. 0) then
+                            read(buffer, *, iostat=ios) key_p_pos
+                            if (ios == 0) then
+                                print *, 'Warning: You have not specified a &
+                                          projectile height.'
+                                print *, '         Height set to 6.0 A.'
+                            else
+                                print *, 'Warning: You have not specified a &
+                                                   projectile position.'
+                                print *, '         Projectile position assigned to top &
+                                                at 6.0 A'
+                            end if
+                        end if
                     case(-1)
                     case default
                         print '(A,I4,A)', 'Warning: Pip Flag value ', pip_sign, ' does not match any possible options.'
@@ -309,6 +325,7 @@ call random_seed(size=randk)
     if (wstep(1) == 2) then
         print *, 'Warning: You are saving all the geometries along the trajectory.'
         print *, '         This is storage demanding.'
+    end if
 
 !------------------------------------------------------------------------------
 !                       READ IN CONFIGURATION
@@ -846,6 +863,7 @@ subroutine particle_init(s)
     integer :: i, j, n_p
     real(8) :: vinc
     real(8), dimension(2) :: cc1, cc2
+    real(8) :: v_pdof = 0.0d0
 
     cc1 = (/a_lat*isqrt2,0.0d0/)
     cc2 = 0.5d0*cc1(1)*(/-1.0d0,sqrt3/)
@@ -899,12 +917,33 @@ subroutine particle_init(s)
                 read(44,*) s%r
 
             close(44)
+        case(3) ! Put atom in designated positions on surface
+
+            call lower_case(key_p_pos)
+            select case (key_p_pos)
+            case('top')
+                s%r(1:2,1) = (/0.,0./)
+            case('fcc')
+                s%r(1:2,1) = (cc1 + 2.0d0*cc2)/3.0d0
+            case('hcp')
+                s%r(1:2,1) = (2.0d0*cc1 + cc2)/3.0d0
+            case('bri')
+                s%r(1:2,1) = (cc1 + cc2)*0.5d0
+            end select
+            s%r(3,1) = height
+            v_pdof = sqrt(2.0d0*kB*Tsurf/mass_p)
+
+            s%v = 0.0d0
+            s%v(1,1) = normal(0.0d0,v_pdof)
+            s%v(2,1) = normal(0.0d0,v_pdof)
+            s%v(3,1) = normal(0.0d0,v_pdof)
+
         case default
 
         end select
     end if
 
-    if (pip_sign .ne. -1) then
+    if (pip_sign .ne. -1 .or. 3) then
     !     Assign projectile velocities
         vinc = sqrt(2.0d0*einc/mass_p)
         s%v(1,:) =  vinc*sin(inclination)*cos(azimuth)

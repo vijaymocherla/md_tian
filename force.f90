@@ -355,7 +355,6 @@ subroutine emt(slab, teil)
     s_l = -log(s_l*twelfth)/betaeta2_l
     s_p = -log(s_p*twelfth)/betaeta2_p
 
-
 !----------------------EMBEDDED ELECTRON DENSITY-------------------------------
 
     rtemp = 0.5d0/bohr2ang - betaeta2_l     ! -eta_l

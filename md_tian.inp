@@ -1,11 +1,9 @@
-wanted md
 start 1
-ntrajs 5
-Einc 5
+ntrajs 1
 inclination 0
 azimuth 60
-nsteps 100
-wstep -1 1
-projectile H   1.0079  emt 7 emt127_H.nml  lan  1
-conf mxt '/home/sjanke/git/md_tian/conf' 5
-pip 1 top
+nsteps 10000000
+wstep 2 1
+projectile H   1.0079  emt 7 emt476_H.nml  lan  1
+conf mxt '/home/sjanke/git/md_tian/conf' 25
+pip 3 top 1.6

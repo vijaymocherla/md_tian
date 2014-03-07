@@ -217,7 +217,7 @@ subroutine out_all(slab, teil, itraj, Eref)
 
 
     close(753)
-    filename = 'tar -zcf '//filename
+    filename = 'gzip '//filename
     call system(filename)
     save_counter = save_counter+1
 

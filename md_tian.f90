@@ -133,13 +133,13 @@ do itraj = start_tr, ntrajs+start_tr-1
     !print *, 'ntraj', itraj
     !timing
     !call cpu_time(start)
-
 !------------------------------------------------------------------------------
 !
 !                         LOOP OVER TIME STEPS
 !
 !------------------------------------------------------------------------------
     do q = 1, nsteps
+        print *, q
 
 
 !----------------------- PROPAGATION ROUTINE ----------------------------------
@@ -209,10 +209,11 @@ do itraj = start_tr, ntrajs+start_tr-1
                     output_info(5+4*j:4+7*j,nwrites) = reshape(teil%v,(/3*j/))
                     ndata = ndata + 1
 
-                case(1) ! full configuration of system
-                    if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)
                 case(2)
-                    if (q > wstep(1)) call out_all(slab, teil,itraj,Eref)
+                    call out_all(slab, teil,itraj,Eref)
+
+                case default ! full configuration of system
+                    if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)
 
             end select
 
@@ -224,8 +225,9 @@ do itraj = start_tr, ntrajs+start_tr-1
                 exit_key = .true.
             end if
         end do
+        print *, exit_key
         if (exit_key) exit
-
+        print *, teil%r(3,1)
     end do ! steps
 
     col_end = col_end - col_start
@@ -244,8 +246,8 @@ do itraj = start_tr, ntrajs+start_tr-1
     !timing
     !call cpu_time(fin)
     !print *, fin - start, " seconds"
-    call open_for_write(111,'config.dat')
-    write(111,'(3f15.5)') slab%r
+!    call open_for_write(111,'config.dat')
+!    write(111,'(3f15.5)') slab%r
 end do ! trajectories
 
 if (allocated(pars_p)) deallocate(pars_p)
