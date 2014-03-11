@@ -139,7 +139,6 @@ do itraj = start_tr, ntrajs+start_tr-1
 !
 !------------------------------------------------------------------------------
     do q = 1, nsteps
-        print *, q
 
 
 !----------------------- PROPAGATION ROUTINE ----------------------------------
@@ -225,9 +224,7 @@ do itraj = start_tr, ntrajs+start_tr-1
                 exit_key = .true.
             end if
         end do
-        print *, exit_key
         if (exit_key) exit
-        print *, teil%r(3,1)
     end do ! steps
 
     col_end = col_end - col_start

@@ -2,8 +2,8 @@ start 1
 ntrajs 1
 inclination 0
 azimuth 60
-nsteps 10000000
-wstep 2 1
+nsteps 200001
+wstep 2 200
 projectile H   1.0079  emt 7 emt476_H.nml  lan  1
 conf mxt '/home/sjanke/git/md_tian/conf' 25
 pip 3 top 1.6
