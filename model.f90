@@ -26,7 +26,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     COMMON/BLK5/IB(20),IP
 !    COMMON/debug/ debug(5)
 
-    ncells = 1.0d0/(2*rep+1)**2
+    ncells = 1.0d0/((2*rep(1)+1)*(2*rep(2)+1))
     ! Select if derivatives shall be called or not.
     pars_l = B(8:14)
     pars_p = B(1:7)

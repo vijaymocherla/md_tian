@@ -70,7 +70,7 @@ module md_init
     real(8), dimension(:,:,:), allocatable :: x_all
     real(8), dimension(:),     allocatable :: y_all
     real(8) :: evasp = -24.995689d0 ! A value for Au 2x2
-    integer :: rep = 2  ! number of repetition layers arounf an original cell
+    integer, dimension(2) :: rep = (/2,2/)  ! number of repetition layers
     integer :: ipc ! number of parameters to be held constant during fit
     integer, dimension(20) :: ibt = 0 ! Integer Array containing the subscripts of parameters to be held constant.
     integer :: max_iterations = 10 ! maximum number of iterations
@@ -291,7 +291,23 @@ call random_seed(size=randk)
                 end select
 
             case ('rep')
+
                 read(buffer, *, iostat=ios) rep
+                if (ios /= 0) then
+
+                    read(buffer, *, iostat=ios) rep(1)
+                    if (ios == 0) then
+                        rep(2) = rep(1)
+                        print *, 'Warning: You have specified a single number for cell &
+                                           repetitions.'
+                        print *, '         Using the same repetition in both directions.'
+                    else
+                        print *, 'Warning: You have not specified number of cell repetitions.'
+                        print *, '         Set to 2x2.'
+                   end if
+
+                end if
+
             case ('conf')
                 read(buffer, *, iostat=ios) confname, confname_file
                 if (confname == 'mxt') read(buffer, *, iostat=ios) &
@@ -354,11 +370,13 @@ call random_seed(size=randk)
         d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
 
         cell_mat = 0.0d0
-        cell_mat(1:2,1:2) = c_matrix(1:2,1:2)*(2*rep + 1)
+        cell_mat(1:2,1) = c_matrix(1:2,1)*(2*rep(1) + 1)
+        cell_mat(1:2,2) = c_matrix(1:2,2)*(2*rep(2) + 1)
         cell_mat(  3,  3) = c_matrix(3,3)
 
         cell_imat = 0.0d0
-        cell_imat(1:2,1:2) = d_matrix(1:2,1:2)/(2*rep + 1)
+        cell_imat(1:2,1) = d_matrix(1:2,1)/(2*rep(1) + 1)
+        cell_imat(1:2,2) = d_matrix(1:2,2)/(2*rep(2) + 1)
         cell_imat(  3,  3) = d_matrix(3,3)
 
         ! Read in coordinates
@@ -387,14 +405,16 @@ call random_seed(size=randk)
     ! permutations and then, the number of gold atoms has to be added again, since
     ! one also wants to keep the original image in the new array.
     ! temp is the number of gold atoms
-    ! if the cell is translated by rep =1, then 8 new images are formed
-    !                              rep =2, then 8 + 16
-    !                              rep =3, then 8 + 16 + 24
-    ! We have decided to replicate quadratically around the original lattice,
-    ! otherwise, rep = 1 would not make much sense.
+    ! if the cell is translated by 2D-array rep, then (2*rep(1)+1)x(2*rep(2)+1) - 1
+    !                                                   new images are formed
+    ! for example, rep =(/0,0/) yeilds  1x1-1=  0       new images
+    !              rep =(/0,1/)         1x3-1=  2
+    !              rep =(/1,1/)         3x3-1=  8
+    !              rep =(/1,2/)         3x5-1= 14
+    !              rep =(/2,2/)         5x5-1= 24
     !
         itemp=celldim(1)*celldim(2)
-        n_l=itemp*celldim(3)*(2*rep+1)**2
+        n_l=itemp*celldim(3)*(2*rep(1)+1)*(2*rep(2)+1)
 
         allocate(d_l(3,n_l))
         d_l = 0.0d0
@@ -402,8 +422,8 @@ call random_seed(size=randk)
         ! Replication
         i = 1
         do l = 1, celldim(3)
-            do j =-rep, rep
-                do k=-rep, rep
+            do j =-rep(1), rep(1)
+                do k=-rep(2), rep(2)
                     d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
                     d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
                     d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
@@ -445,7 +465,7 @@ call random_seed(size=randk)
             print *, "         Calculations will continue without projectile."
         end if
 
-        itemp = n_p*(2*rep+1)**2
+        itemp = n_p*(2*rep(1)+1)*(2*rep(2)+1)
 
         ! Projectile initialization
         if (md_algo_p > 0) then    ! projectile existence justified
@@ -463,8 +483,8 @@ call random_seed(size=randk)
                 j=1
                 l=1
 
-                do r =-rep, rep
-                do s =-rep, rep
+                do r =-rep(1), rep(1)
+                do s =-rep(2), rep(2)
                 do l =   1, n_p
 
                     if (j > n_p0) exit
@@ -713,8 +733,8 @@ call random_seed(size=randk)
             do q = 1,npts(2)
                 i = 1
                 do l = 1, celldim(3)
-                do j =-rep, rep
-                do k=-rep, rep
+                do j =-rep(1), rep(1)
+                do k =-rep(2), rep(2)
                     d_l3(q,1,i:i+itemp-1) = aimd_l(q,1,(l-1)*itemp+1:l*itemp)+j
                     d_l3(q,2,i:i+itemp-1) = aimd_l(q,2,(l-1)*itemp+1:l*itemp)+k
                     d_l3(q,3,i:i+itemp-1) = aimd_l(q,3,(l-1)*itemp+1:l*itemp)
@@ -732,8 +752,8 @@ call random_seed(size=randk)
                 j=1
                 do q = 1,npts(2)
                     j = 1
-                    do r =-rep, rep
-                    do s =-rep, rep
+                    do r =-rep(1), rep(1)
+                    do s =-rep(2), rep(2)
                     do l =   1, n_p0
                         d_p3(q,1,j) = aimd_p(q,1,l)+r
                         d_p3(q,2,j) = aimd_p(q,2,l)+s

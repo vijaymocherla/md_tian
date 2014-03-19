@@ -40,7 +40,7 @@ real(8) :: sumsq, ncells, Eref, se
 
 character(len=100) teil_nml_out, slab_nml_out
 
-ncells = 1.0d0/(2*rep+1)**2
+ncells = 1.0d0/((2*rep(1)+1)*(2*rep(2)+1))
 IB = ibt
 ip = ipc
 
@@ -84,8 +84,8 @@ if (npts > 0) then
         end if
 
         if(q<11) write( *,'(1X, 5F15.8)') X(q,1,1), X(q,2,1), X(q,3,1), (Epot-Eref)*ncells, Y(q)
-!        write(10,'(1X, 5F15.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/(2*rep+1)**2, Y(q)
-!        write(7, '(1X, 4F16.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/(2*rep+1)**2
+!        write(10,'(1X, 5F15.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1)), Y(q)
+!        write(7, '(1X, 4F16.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1))
 
         sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
     end do
@@ -202,7 +202,7 @@ subroutine dev2eqdft(Eref)
     do j=1,1500
         call emt_e_fit(array(j,:,:nl_atoms+np_atoms), energy)
         write(17,'(I4, 4f15.5)') (j+150-1)/150, array(j,1,5), array(j,2,5),&
-                                 array(j,3,5), (energy-Eref)/(2*rep+1)**2
+                                 array(j,3,5), (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
     end do
     close(17)
 
@@ -226,7 +226,7 @@ subroutine dev2aimddft(Eref)
     real(8), dimension(:), allocatable :: E_dft1
     character(len=3), dimension(13) :: names
 
-    write(str,'(I1)') rep
+    write(str,'(2I1)') rep
     nr=trim(fit_dir)//'traj'//trim(fitnum)//'_'//str
     call open_for_append(1,trim(nr)//'.dat')
     names = (/'005','010','801','814','817','818','820','821','825','831','832'&
@@ -246,8 +246,8 @@ subroutine dev2aimddft(Eref)
 
         do q=1,npts
             call emt_e_fit(array(q,:,:nl_atoms+np_atoms), energy)
-            write(1,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/(2*rep+1)**2
-            !write(*,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/(2*rep+1)**2
+            write(1,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
+            !write(*,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
         end do
         deallocate(array, E_dft1)
     end do
@@ -315,14 +315,15 @@ subroutine readinaimd(pos_l_p,energy_l_p, d_l3, d_p3, npts, E_dft1)
     itemp=celldim(1)*celldim(2)
     allocate(d_l3(npts,3,nl_atoms))
 
-    c_matrix(1:2,1:2) = cell_mat(1:2,1:2)/(2*rep + 1)
+    c_matrix(1:2,1) = cell_mat(1:2,1)/(2*rep(1) + 1)
+    c_matrix(1:2,2) = cell_mat(1:2,2)/(2*rep(2) + 1)
     c_matrix(3,3) = cell_mat(3,3)
     ! Replication
     do q = 1,npts
         i = 1
         do l = 1, celldim(3)
-        do j =-rep, rep
-        do k=-rep, rep
+        do j =-rep(1), rep(1)
+        do k =-rep(2), rep(2)
             d_l3(q,1,i:i+itemp-1) = aimd_l(q,1,(l-1)*itemp+1:l*itemp)+j
             d_l3(q,2,i:i+itemp-1) = aimd_l(q,2,(l-1)*itemp+1:l*itemp)+k
             d_l3(q,3,i:i+itemp-1) = aimd_l(q,3,(l-1)*itemp+1:l*itemp)
@@ -340,8 +341,8 @@ subroutine readinaimd(pos_l_p,energy_l_p, d_l3, d_p3, npts, E_dft1)
         j=1
         do q = 1,npts
             j = 1
-            do r =-rep, rep
-            do s =-rep, rep
+            do r =-rep(1), rep(1)
+            do s =-rep(2), rep(2)
             do l =   1, n_p0
                 d_p3(q,1,j) = aimd_p(q,1,l)+r
                 d_p3(q,2,j) = aimd_p(q,2,l)+s
