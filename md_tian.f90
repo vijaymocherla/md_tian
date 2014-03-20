@@ -211,6 +211,9 @@ do itraj = start_tr, ntrajs+start_tr-1
                 case(2)
                     call out_all(slab, teil,itraj,Eref)
 
+                case(3)
+                    call out_all(slab, teil,itraj,Eref)
+
                 case default ! full configuration of system
                     if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)
 
@@ -218,6 +221,10 @@ do itraj = start_tr, ntrajs+start_tr-1
 
         end if
 
+        if (mod(q,100000)==0 .and. wstep(1) == 3) then
+            save_counter = save_counter - 1
+            call full_conf(slab, teil,itraj,Eref)
+        end if
 
         do i=1,teil%n_atoms
             if (teil%r(3,i) > proj_upgone .or. teil%r(3,i) < proj_downgone) then
@@ -229,6 +236,8 @@ do itraj = start_tr, ntrajs+start_tr-1
 
     col_end = col_end - col_start
     ! final state
+    call full_conf(slab, teil,itraj,Eref)
+
     if (wstep(1)==-1) call out_short (slab, teil, Epot, Eref, itraj, q, rmin_p, &
                                       col_end, imp, rbounce)
     if (wstep(1)== 0) call out_detail(output_info, ndata, itraj, Eref)
