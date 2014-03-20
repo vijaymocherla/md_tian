@@ -106,6 +106,18 @@ end if
 ! Usage: CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
 
 !------------------ SET UP B-----------------
+!
+! The paramters are defined as follows:
+!
+!           teil    slab
+! eta2      1       8
+! n0        2       9
+! E0        3       10
+! lambda    4       11
+! V0        5       12
+! kappa     6       13
+! s0        7       14
+!
 B(1:7)  = pars_p
 B(8:14) = pars_l
 
@@ -157,6 +169,7 @@ se=0.0d0
 call emt_e_fit(x_all(1,:,:nl_atoms+np_atoms), Eref)
 call dev2eqdft(Eref)
 call dev2aimddft(Eref)
+call denseqdft(Eref)
 
 do q=2,npts
         call emt_e_fit(x_all(q,:,:nl_atoms+np_atoms), Epot)
@@ -210,6 +223,49 @@ subroutine dev2eqdft(Eref)
 
 end subroutine dev2eqdft
 
+subroutine denseqdft(Eref)
+    !
+    ! Purpose:
+    !           Calculate points at equilibrium positions for all 10 sites.
+    !           For comparison of new fit with input DFT-equilibirum points.
+    !
+
+    integer :: npts, j
+    real(8), dimension(:,:),   allocatable :: fix_p
+    real(8), dimension(:,:,:), allocatable :: array
+    real(8) :: energy, Eref
+    real(8), dimension(:), allocatable :: pdens
+
+    call open_for_read(69,trim(fit_dir)//'/Eq_points_dft.dat')
+    npts=1500
+    allocate(fix_p(npts,3))
+    do j = 1,npts
+        read(69,*) fix_p(j,:)
+    end do
+    close(69)
+
+    allocate(array(npts,3,np_atoms+nl_atoms))
+    do j = 1,npts
+        array(j,1,:np_atoms) = x_all(1,1,:np_atoms) + fix_p(j,1)
+        array(j,2,:np_atoms) = x_all(1,2,:np_atoms) + fix_p(j,2)
+        array(j,3,:np_atoms) = fix_p(j,3)
+        array(j,:,np_atoms+1:) = x_all(1,:,np_atoms+1:)
+    end do
+
+    call open_for_write(17,trim(fit_dir)//'densEqdft'//trim(fitnum)//'.dat')
+    do j=1,1500
+        call emt_dens_fit(array(j,:,:nl_atoms+np_atoms), energy,pdens)
+        write(17,'(I4, 3f15.5, f20.7)') (j+150-1)/150, array(j,1,5), array(j,2,5),&
+                                 array(j,3,5), pdens(5)
+    deallocate(pdens)
+    end do
+    close(17)
+
+    deallocate(array, fix_p)
+
+end subroutine denseqdft
+
+
 subroutine dev2aimddft(Eref)
     !
     ! Purpose:
@@ -230,7 +286,7 @@ subroutine dev2aimddft(Eref)
     nr=trim(fit_dir)//'traj'//trim(fitnum)//'_'//str
     call open_for_append(1,trim(nr)//'.dat')
     names = (/'005','010','801','814','817','818','820','821','825','831','832'&
-             ,'833','825'/)
+             ,'833','858'/)
 
     do i = 1, 13
         print*, 'Calculating traj', names(i)

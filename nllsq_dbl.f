@@ -379,7 +379,7 @@ C**********************************************************************
  1    A(J,I)=0.
       DO 50 II=1,N
 C     LOOK FOR PARTIALS
-      !J=2
+      !J=2 analytic derivatives
       J=2
       CALL MODEL(F,Y,X,RES,II,J)
       RD=RE
