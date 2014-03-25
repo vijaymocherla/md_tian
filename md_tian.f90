@@ -133,6 +133,7 @@ do itraj = start_tr, ntrajs+start_tr-1
     !print *, 'ntraj', itraj
     !timing
     !call cpu_time(start)
+
 !------------------------------------------------------------------------------
 !
 !                         LOOP OVER TIME STEPS

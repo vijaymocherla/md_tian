@@ -1,15 +1,10 @@
 start 1
 ntrajs 1
-Einc 2.8
-inclination 0
-azimuth 0
 Tsurf 300
-step 0.1
-nsteps 100
-wstep  1 10
-projectile H   1.0079  emt 7 emt274_H.nml  ver  0
-lattice   Au 196.96657 emt 7 emt274_Au.nml ver -1
-celldim 2 2 4
-rep 1
-conf POSCAR au111_2x2x4.POSCAR
-pppip 1
+step 1
+nsteps 2000
+wstep 1 1
+lattice  Au 196.96657 emt 7 emt_stroem_Au.nml lan -1
+celldim 1 1 4
+rep 30 6
+conf POSCAR POSCAR

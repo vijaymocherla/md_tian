@@ -176,6 +176,10 @@ subroutine emt(slab, teil)
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
+
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
+
             r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
@@ -216,6 +220,10 @@ subroutine emt(slab, teil)
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
+
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
+
             r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
@@ -257,6 +265,10 @@ subroutine emt(slab, teil)
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
+
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
+
             r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
@@ -563,6 +575,9 @@ subroutine emt_e(slab, teil)
 
             r =  sqrt(sum(r3temp**2))               ! distance
 
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
+
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
@@ -593,6 +608,9 @@ subroutine emt_e(slab, teil)
 
             r =  sqrt(sum(r3temp**2))               ! distance
 
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
+
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
@@ -622,6 +640,9 @@ subroutine emt_e(slab, teil)
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
+
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -786,13 +807,16 @@ subroutine emt1(s)
             ! Applying PBCs
             r3temp = s%r(:,i) - s%r(:,j)         ! distance vector
             r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-
             r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
             r3temp(2) = r3temp(2) - Anint(r3temp(2))
             r3temp(3) = r3temp(3) - Anint(r3temp(3))
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
+
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
+
             r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
@@ -967,6 +991,10 @@ subroutine emt1_e(s)
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
+
+            ! drops atoms outside (cutoff*rcut)-sphere
+            if (r > cutoff*rcut) cycle
+
             r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
@@ -1545,6 +1573,7 @@ subroutine emt_de_fit(xdata, energy, denergy)
             r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
             r3temp(2) = r3temp(2) - Anint(r3temp(2))
             r3temp(3) = r3temp(3) - Anint(r3temp(3))
+
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
