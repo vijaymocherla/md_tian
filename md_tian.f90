@@ -74,6 +74,8 @@ if (confname == 'fit') then
     stop
 end if
 
+
+
 !------------------------------------------------------------------------------
 !
 !                      LOOP OVER TRAJECTORIES
@@ -152,6 +154,7 @@ do itraj = start_tr, ntrajs+start_tr-1
            call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
         else
             call emt1(slab)                           ! slab forces
+
         end if
 
         call propagator_2(slab, md_algo_l, imass_l)         ! slab kick

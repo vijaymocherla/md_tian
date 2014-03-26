@@ -343,6 +343,7 @@ call random_seed(size=randk)
         print *, '         This is storage demanding.'
     end if
 
+
 !------------------------------------------------------------------------------
 !                       READ IN CONFIGURATION
 !                       =====================
@@ -431,7 +432,6 @@ call random_seed(size=randk)
                 end do
             end do
         end do
-
 
         allocate(pos_l(3,n_l), vel_l(3,n_l))
         pos_l = matmul(c_matrix,d_l)

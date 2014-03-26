@@ -7,7 +7,7 @@ module mdalgo
     ! Date          	Author          	History of Revison
     ! ====          	======          	==================
     ! 18.02.2014    	Svenja M. Janke		Original
-    !			Sascha Kandratsenka	
+    !			Sascha Kandratsenka
     !			Dan J. Auerbach
 
     use atom_class

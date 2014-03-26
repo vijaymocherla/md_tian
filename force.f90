@@ -781,7 +781,8 @@ subroutine emt1(s)
     dvref_l_l   = 0.0d0
 
     do i = 1, s%n_atoms
-        do j = i+1, s%n_atoms
+        !do j = i+1, s%n_atoms
+        do j = 365,365
 
             ! Applying PBCs
             r3temp = s%r(:,i) - s%r(:,j)         ! distance vector
@@ -799,12 +800,15 @@ subroutine emt1(s)
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
             rtemp1 = acut*rtemp*theta
+            !print*, exp(acut*(r - rcut)), s%r(:,i),s%r(:,j)
+            print*, s%r(:,i),s%r(:,j), r3temp
 
             rtemp = theta*exp(-pars_l(1)*(r - betas0_l))    ! sigma_ij*gamma1
             sigma_ll(i) = sigma_ll(i) + rtemp
             sigma_ll(j) = sigma_ll(j) + rtemp
 
             dtheta = (pars_l(1) + rtemp1)*rtemp*r3temp
+            !print *, dtheta
             dsigma_ll(:,i,i) = dsigma_ll(:,i,i) - dtheta    ! dsigma_i/dr_i
             dsigma_ll(:,j,j) = dsigma_ll(:,j,j) + dtheta
             dsigma_ll(:,j,i) = dtheta                       ! dsigma_i/dr_j
@@ -818,7 +822,9 @@ subroutine emt1(s)
             dV_ll_l(:,j) = dV_ll_l(:,j) - dtheta
 
         end do
+        stop
     end do
+    stop
 
     ! divide by cut-off scaling factors
     sigma_ll = sigma_ll*igamma1l
@@ -878,6 +884,7 @@ subroutine emt1(s)
 
     ! minus sign was taken into account in calculation of separate contributions
     s%f = dEcoh_l_l - dV_ll_l + 0.50d0*dvref_l_l
+
 
     deallocate(dvref_l_l, dV_ll_l, dEcoh_l_l, ds_l_l, dsigma_ll)
     deallocate(s_l, sigma_ll)
