@@ -338,7 +338,7 @@ call random_seed(size=randk)
 
     close(38)
 
-    if (wstep(1) > 1) then
+    if (wstep(1) < -1) then
         print *, 'Warning: You are saving all the geometries along the trajectory.'
         print *, '         This is storage demanding.'
     end if

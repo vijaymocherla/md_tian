@@ -282,7 +282,7 @@ subroutine dev2aimddft(Eref)
     real(8), dimension(:), allocatable :: E_dft1
     character(len=3), dimension(13) :: names
 
-    write(str,'(2I1)') rep
+    write(str,'(2I1)') rep(1)
     nr=trim(fit_dir)//'traj'//trim(fitnum)//'_'//str
     call open_for_append(1,trim(nr)//'.dat')
     names = (/'005','010','801','814','817','818','820','821','825','831','832'&

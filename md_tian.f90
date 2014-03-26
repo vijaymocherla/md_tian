@@ -212,10 +212,10 @@ do itraj = start_tr, ntrajs+start_tr-1
                     output_info(5+4*j:4+7*j,nwrites) = reshape(teil%v,(/3*j/))
                     ndata = ndata + 1
 
-                case(2)
+                case(-2)
                     call out_all(slab, teil,itraj,Eref)
 
-                case(3)
+                case(-3)
                     call out_all(slab, teil,itraj,Eref)
 
                 case default ! full configuration of system
