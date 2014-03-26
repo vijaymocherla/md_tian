@@ -1,8 +1,5 @@
 start 1
 ntrajs 1
-Einc 2.8
-inclination 0
-azimuth 0
 Tsurf 300
 step 0.1
 nsteps 100

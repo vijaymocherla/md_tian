@@ -338,7 +338,7 @@ call random_seed(size=randk)
 
     close(38)
 
-    if (wstep(1) == 2) then
+    if (wstep(1) > 1) then
         print *, 'Warning: You are saving all the geometries along the trajectory.'
         print *, '         This is storage demanding.'
     end if
@@ -376,8 +376,8 @@ call random_seed(size=randk)
         cell_mat(  3,  3) = c_matrix(3,3)
 
         cell_imat = 0.0d0
-        cell_imat(1:2,1) = d_matrix(1:2,1)/(2*rep(1) + 1)
-        cell_imat(1:2,2) = d_matrix(1:2,2)/(2*rep(2) + 1)
+        cell_imat(1,1:2) = d_matrix(1,1:2)/(2*rep(1) + 1)
+        cell_imat(2,1:2) = d_matrix(2,1:2)/(2*rep(2) + 1)
         cell_imat(  3,  3) = d_matrix(3,3)
 
         ! Read in coordinates
