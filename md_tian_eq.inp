@@ -1,11 +1,11 @@
-start 1
+start 26
 ntrajs 1
 step 0.1
 nsteps 10000
-wstep -1 1
-Einc 1
-inclination 0
-azimuth 0
-projectile H   1.0079  emt 7 emt476_H.nml  lan  1
-conf mxt "/home/sjanke/git/md_tian/conf" 1000
+wstep 1 1
+Einc 2.8
+inclination 20
+azimuth 60
+projectile H   1.0079  emt 7 emt475_H.nml  lan  1
+conf mxt "/home/sjanke/git/md_tian/conf475_therm" 1000
 pip 0

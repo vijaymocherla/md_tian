@@ -13,7 +13,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     integer             :: N, M, KK
 
     integer             :: iteration
-    real(8)             :: energy,  E_dref
+    real(8)             :: energy,  E_dref, dE
     real(8), dimension(14):: denergy
     real(8), dimension(14) ::dEref
     real(8)                 :: ncells, Eref, delta
@@ -49,7 +49,6 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         call emt_de_fit(xdat(1,:,:nl_atoms+np_atoms), Eref, dEref)
         call emt_de_fit(xdat(I,:,:nl_atoms+np_atoms), energy, denergy)
 
-
         energy=(energy-Eref)*ncells
         denergy=(denergy-dEref)*ncells
         F   = energy
@@ -70,6 +69,8 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 !        end if
 
     case(3)
+        pars_l = B(8:14)
+        pars_p = B(1:7)
         call emt_e_fit(xdat(1,:,:nl_atoms+np_atoms), Eref)
         call emt_e_fit(xdat(I,:,:nl_atoms+np_atoms), energy)
         energy=(energy-Eref)*ncells
@@ -80,6 +81,28 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
             !if (iteration > 0) write(*,1000) iteration, i, YDAT(i), F, B(1:14)
             write(*,1000) iteration, i, YDAT(i), YDAT(i)-F, B(1:14)
         end if
+
+        ! Comment in if you want to Check the Derivatives.
+!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms), energy, denergy)
+!        print *, denergy(7)
+!        delta = 0.0001d0
+!        pars_l(7) = pars_l(7) - delta
+!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms), E_dref, denergy)
+!        pars_l(7) = pars_l(7) + 2*delta
+!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms),energy, denergy)
+!        pars_l(7) = pars_l(7) - delta
+!        print*, (E_dref-energy)/(2*delta)
+!        stop
+
+!        pars_p(7) = pars_p(7) - delta
+!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms), E_dref, denergy)
+!        pars_p(7) = pars_p(7) + 2*delta
+!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms),energy, denergy)
+!        pars_p(7) = pars_p(7) - delta
+!        print*, (E_dref-energy)/(2*delta)
+!        stop
+
+
     case(4)
         call emt_e_fit(xdat(1,:,:), Eref)
         call emt_e_fit(xdat(I,:,:), energy)

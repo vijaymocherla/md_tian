@@ -844,9 +844,7 @@ subroutine emt1(s)
             dV_ll_l(:,j) = dV_ll_l(:,j) - dtheta
 
         end do
-        stop
     end do
-    stop
 
     ! divide by cut-off scaling factors
     sigma_ll = sigma_ll*igamma1l
@@ -1327,7 +1325,7 @@ subroutine emt_de_fit(xdata, energy, denergy)
 ! derivative with respect to to eta2, followed by no, eo, lambda, vo, kappa and so.
 ! The general notation is:
 ! e.g. dV_lp_l(1) : the derivative of V_lp with respect to eta2_l.
-    real(8), dimension(2) :: dchilp= 0.0d0, dchipl= 0.0d0     ! First element: p, then l
+    real(8), dimension(4) :: dchilp= 0.0d0, dchipl= 0.0d0     ! First element: p, then l
     real(8), dimension(7) :: dgamma1l= 0.0d0, dgamma2l= 0.0d0
     real(8), dimension(7) :: dgamma1p= 0.0d0, dgamma2p= 0.0d0
     real(8), dimension(7,nl_atoms) :: dsigma_ll
@@ -1343,10 +1341,10 @@ subroutine emt_de_fit(xdata, energy, denergy)
     real(8), dimension(7) :: dvref_l_l, dvref_l_p
     real(8), dimension(7) :: dvref_p_l, dvref_p_p
     real(8), dimension(7) :: dEcoh_l, dEcoh_p
+    real(8), dimension(3) :: drnn, dxl, dxp
 
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
-
     ! beta * s0
     betas0_l = beta * pars_l(7)
     betas0_p = beta * pars_p(7)
@@ -1366,10 +1364,13 @@ subroutine emt_de_fit(xdata, energy, denergy)
 !
     dchilp(1) =  chilp/pars_p(2)        ! d chilp / d nop
     dchilp(2) = -chilp/pars_l(2)        ! d chilp / d nol
+    dchilp(3) = -chilp * 0.5d0/bohr2ang ! d chilp / d sop
+    dchilp(4) = -dchilp(3)              ! d chilp / d sol
 
-    dchipl(1) = -chipl/pars_p(2)      ! d chipl / d nop
-    dchipl(2) =  chipl/pars_l(2)      ! d chipl / d nol
-
+    dchipl(1) = -chipl/pars_p(2)        ! d chipl / d nop
+    dchipl(2) =  chipl/pars_l(2)        ! d chipl / d nol
+    dchipl(3) =  chipl * 0.5d0/bohr2ang ! d chipl / d sop
+    dchipl(4) = -dchipl(3)              ! d chipl / d sol
     ! Distances to the nearest, next-nearest and next-next-nearest neighbours
     rnnl(1) = betas0_l
     rnnl(2) = rnnl(1) * sqrt2
@@ -1377,6 +1378,10 @@ subroutine emt_de_fit(xdata, energy, denergy)
     rnnp(1) = betas0_p
     rnnp(2) = rnnp(1) * sqrt2
     rnnp(3) = rnnp(1) * sqrt3
+
+    drnn(1) = beta
+    drnn(2) = drnn(1) * sqrt2
+    drnn(3) = drnn(1) * sqrt3
 
 !------------------------------------------------------------------------------
 !                                  CUT-OFF
@@ -1393,6 +1398,8 @@ subroutine emt_de_fit(xdata, energy, denergy)
 
     xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
     xp = b * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
+    dxl = -xl*acut*drnn*exp(acut*(rnnl-rcut))/(1.0d0 + exp(acut*(rnnl-rcut)))
+    dxp = -xp*acut*drnn*exp(acut*(rnnp-rcut))/(1.0d0 + exp(acut*(rnnp-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -1406,25 +1413,32 @@ subroutine emt_de_fit(xdata, energy, denergy)
     igamma1l = 1.0d0 / sum(r3temp1)
     dgamma1l = 0.d0
     dgamma1l(1) = - sum(r3temp*r3temp1)
-
+    dgamma1l(7) = sum(r3temp1*betaeta2_l)+sum(dxl*exp(- pars_l(1)*r3temp)) -&
+                  sum(r3temp1*pars_l(1)*drnn)
 
     r3temp1 = xl*exp(-kappadbeta_l * r3temp)
     igamma2l = 1.0d0 / sum(r3temp1)
-    dgamma2l = 0.
+    dgamma2l = 0.d0
     dgamma2l(6) = - sum(r3temp*r3temp1) / beta
+    dgamma2l(7) = sum(r3temp1 * pars_l(6))
+    dgamma2l(7) = sum(r3temp1*pars_l(6))+sum(dxl*exp(-kappadbeta_l*r3temp)) -&
+                  sum(r3temp1*kappadbeta_l*drnn)
 
     r3temp = rnnp-betas0_p
 
     r3temp1 = xp*exp(- pars_p(1)*r3temp)
     igamma1p = 1.0d0 / sum(r3temp1)
-    dgamma1p = 0.
+    dgamma1p = 0.0d0
     dgamma1p(1) = - sum(r3temp*r3temp1)
-
+    dgamma1p(7) = sum(r3temp1*betaeta2_p)+sum(dxp*exp(- pars_p(1)*r3temp)) -&
+                  sum(r3temp1*pars_p(1)*drnn)
 
     r3temp1 = xp*exp(-kappadbeta_p * r3temp)
     igamma2p = 1.0d0 / sum(r3temp1)
-    dgamma2p = 0.
+    dgamma2p = 0.d0
     dgamma2p(6) = - sum(r3temp*r3temp1) / beta
+    dgamma2p(7) = sum(r3temp1*pars_p(6))+sum(dxp*exp(-kappadbeta_p*r3temp)) -&
+                  sum(r3temp1*kappadbeta_p*drnn)
 
 
 !------------------------------------------------------------------------------
@@ -1509,6 +1523,7 @@ subroutine emt_de_fit(xdata, energy, denergy)
             dsigma_ll(1,i) = dsigma_ll(1,i) - rtemp1
             dsigma_ll(1,j) = dsigma_ll(1,j) - rtemp1
 
+
             !-----------------------PAIR POTENTIAL LATTICE-------------------------
             ! Will later be subjected to gamma to complete the cut-off.
 
@@ -1555,6 +1570,10 @@ subroutine emt_de_fit(xdata, energy, denergy)
             dsigma_pp(1,i) = dsigma_pp(1,i) - rtemp1
             dsigma_pp(1,j) = dsigma_pp(1,j) - rtemp1
 
+            rtemp1 = rtemp*betaeta2_p
+            dsigma_pp(7,i) = dsigma_pp(7,i) + rtemp1
+            dsigma_pp(7,j) = dsigma_pp(7,j) + rtemp1
+
             !-----------------------PAIR POTENTIAL LATTICE-------------------------
             ! Will later be subjected to gamma to complete the cut-off.
 
@@ -1563,6 +1582,7 @@ subroutine emt_de_fit(xdata, energy, denergy)
 
             rtemp1 = rtemp*(r - betas0_p)
             dV_pp(6) = dV_pp(6) + rtemp1
+            dV_pp(7) = dV_pp(7) + rtemp*pars_p(6)
 
        end do
     end do
@@ -1598,12 +1618,14 @@ subroutine emt_de_fit(xdata, energy, denergy)
             rtemp = theta*exp(-pars_p(1) * (r - betas0_p) )     ! sigma_ij*gamma1
             sigma_lp(j) = sigma_lp(j) + rtemp
             dsigma_lp_p(1,j) = dsigma_lp_p(1,j)-(r-betas0_p)*rtemp
+            dsigma_lp_l(7,i) = dsigma_lp_l(7,i)+ betaeta2_p*rtemp
 
             ! sigma_pl
             rtemp = theta*exp(-pars_l(1) * (r - betas0_l) )     ! sigma_ij*gamma1
             sigma_pl(i) = sigma_pl(i) + rtemp
 
             dsigma_pl_l(1,i) = dsigma_pl_l(1,i) - (r - betas0_l)*rtemp
+            dsigma_pl_p(7,j) = dsigma_pl_p(7,j) + rtemp*betaeta2_l
 
             !--------------------MIXED PAIR POTENTIAL CONTRIUBUTION--------------------
 
@@ -1612,10 +1634,12 @@ subroutine emt_de_fit(xdata, energy, denergy)
             V_lp = V_lp + rtemp
 
             dV_lp_p(6) = dV_lp_p(6) + rtemp*(r - betas0_p)
+            dV_lp_p(7) = dV_lp_p(7) + pars_p(6)*rtemp
 
             rtemp = theta*exp(-kappadbeta_l*(r - betas0_l))
             V_pl = V_pl + rtemp
             dV_pl_l(6) = dV_pl_l(6) + rtemp*(r - betas0_l)
+            dV_pl_l(7) = dV_pl_l(7) + rtemp*pars_l(6)
 
         end do
     end do
@@ -1624,42 +1648,61 @@ subroutine emt_de_fit(xdata, energy, denergy)
    ! divide by cut-off scaling factors
     sigma_ll = sigma_ll*igamma1l
         dsigma_ll(1,:) = (dsigma_ll(1,:) - sigma_ll*dgamma1l(1))*igamma1l
+        dsigma_ll(7,:) = sigma_ll*pars_l(1)*beta-sigma_ll*igamma1l*dgamma1l(7)
+
     V_ll     =     V_ll*igamma2l*pars_l(5)
         dV_ll(5) = - V_ll/pars_l(5)
         dV_ll(6) = (dV_ll(6) * pars_l(5)/beta + V_ll*dgamma2l(6)) * igamma2l
+        dV_ll(7) = V_ll*pars_l(6)-V_ll*igamma2l*dgamma2l(7)
+
     sigma_pp = sigma_pp*igamma1p
         dsigma_pp(1,:) = (dsigma_pp(1,:) - sigma_pp*dgamma1p(1))*igamma1p
+        dsigma_pp(7,:) = (dsigma_pp(7,:) - sigma_pp*dgamma1p(7))*igamma1p
+
     V_pp     =     V_pp*igamma2p*pars_p(5)
         dV_pp(5) = - V_pp/pars_p(5)
         dV_pp(6) = (dV_pp(6) * pars_p(5)/beta + V_pp*dgamma2p(6)) * igamma2p
+        dV_pp(7) = (pars_p(5)*dV_pp(7)-V_pp*dgamma2p(7))*igamma2p
+
     sigma_lp = sigma_lp*igamma1l
         ! Derivative with respect to l
         dsigma_lp_l(1,:) = - sigma_lp*igamma1l*dgamma1l(1)
+        dsigma_lp_l(7,:) = - sigma_lp*igamma1l*dgamma1l(7)
         ! Derivative with respect to p
         dsigma_lp_p(1,:) = dsigma_lp_p(1,:)*igamma1l
+        dsigma_lp_p(7,:) = sigma_lp*pars_p(1)*beta
+
     sigma_pl = sigma_pl*igamma1p
         ! Derivative with respect to l
         dsigma_pl_l(1,:) = dsigma_pl_l(1,:)*igamma1p
+        dsigma_pl_l(7,:) = sigma_pl*pars_l(1)*beta
+
         ! Derivative with respect to p
         dsigma_pl_p(1,:) = - sigma_pl*igamma1p*dgamma1p(1)
+        dsigma_pl_p(7,:) = - sigma_pl*igamma1p*dgamma1p(7)
+
     V_lp     =     V_lp*igamma2l*pars_l(5)*chilp
         ! Derivative with respect to l
         dV_lp_l(2) = V_lp/pars_l(2)
         dV_lp_l(5) = - V_lp/pars_l(5)
-        dV_lp_l(7) = V_lp*igamma2l             ! this one is temporary
+        dV_lp_l(7) = V_lp*igamma2l
         dV_lp_l(6) = dV_lp_l(7)*dgamma2l(6)
+        dV_lp_l(7) = V_lp*dchilp(4)*chipl - dV_lp_l(7)*dgamma2l(7)
         ! Derivative with respect to p
         dV_lp_p(2) = -V_lp/pars_p(2)
         dV_lp_p(6) = dV_lp_p(6)*igamma2l*chilp * pars_l(5) / beta
+        dV_lp_p(7) = V_lp*chipl*dchilp(3) + dV_lp_p(7)*chilp*pars_l(5)*igamma2l
 
     V_pl     =     V_pl*igamma2p*pars_p(5)*chipl
         ! Derivative with respect to l
         dV_pl_l(2) = - V_pl/pars_l(2)
         dV_pl_l(6) = dV_pl_l(6)*igamma2p*pars_p(5)*chipl/beta
+        dV_pl_l(7) = V_pl*chilp*dchipl(4) + dV_pl_l(7)*pars_p(5)*chipl*igamma2p
         ! Derivative with respect to p
         dV_pl_p(2) = V_pl/pars_p(2)
         dV_pl_p(5) = - V_pl/pars_p(5)
         dV_pl_p(6) = V_pl*igamma2p*dgamma2p(6)
+        dV_pl_p(7) = V_pl*chilp*dchipl(3) - V_pl*igamma2p*dgamma2p(7)
 
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 
@@ -1671,9 +1714,11 @@ subroutine emt_de_fit(xdata, energy, denergy)
     ds_l_l(1,:) = -s_l/pars_l(1) &
                   - (dsigma_ll(1,:)+chilp*dsigma_lp_l(1,:))*rn_ltemp
     ds_l_l(2,:) = -sigma_lp*rn_ltemp*dchilp(2)
+    ds_l_l(7,:) = rn_ltemp*(dsigma_ll(7,:)+dchilp(4)*sigma_lp+chilp*dsigma_lp_l(7,:))
     ! Derivative with respect to p
     ds_l_p(1,:) = - rn_ltemp*chilp*dsigma_lp_p(1,:)
-    ds_l_p(2,:) = -sigma_lp*rn_ltemp*dchilp(1)
+    ds_l_p(2,:) = - sigma_lp*rn_ltemp*dchilp(1)
+    ds_l_p(7,:) =  rn_ltemp*(dchilp(3)*sigma_lp+chilp*dsigma_lp_p(7,:))
 
     s_p = sigma_pp + chipl*sigma_pl
     rn_ptemp = 1.0d0 / (s_p*betaeta2_p)
@@ -1683,9 +1728,11 @@ subroutine emt_de_fit(xdata, energy, denergy)
     ds_p_p(1,:) = -s_p/pars_p(1) &
                   - (dsigma_pp(1,:)+chipl*dsigma_pl_p(1,:))*rn_ptemp
     ds_p_p(2,:) = - sigma_pl*rn_ptemp*dchipl(1)
+    ds_p_p(7,:) = rn_ptemp*(dsigma_pp(7,:)+dchipl(3)*sigma_pl+chipl*dsigma_pl_p(7,:))
     ! Derivative with respect to p
     ds_p_l(1,:) = - rn_ptemp*chipl*dsigma_pl_l(1,:)
     ds_p_l(2,:) = - sigma_pl*rn_ptemp*dchipl(2)
+    ds_p_l(7,:) =   rn_ptemp*(dchipl(4)*sigma_pl+chipl*dsigma_pl_l(7,:))
 
 !---------------------------COHESIVE FUNCTION-----------------------------------
 
@@ -1701,6 +1748,8 @@ subroutine emt_de_fit(xdata, energy, denergy)
                     + sum(pars_p(4)*rn_ptemp*ds_p_l(2,:))
         dEcoh_l(3) =  sum((1.0d0 + pars_l(4)*s_l) * exp(-pars_l(4) * s_l)-1.0d0)
         dEcoh_l(4) =  sum(s_l*rn_ltemp)
+        dEcoh_l(7) =  sum(pars_l(4)*rn_ltemp*ds_l_l(7,:))&
+                    + sum(pars_p(4)*rn_ptemp*ds_p_l(7,:))
 
         ! Derivative with respect to p
         dEcoh_p(1) =  sum(pars_l(4)*rn_ltemp*ds_l_p(1,:))&
@@ -1709,6 +1758,8 @@ subroutine emt_de_fit(xdata, energy, denergy)
                     + sum(pars_p(4)*rn_ptemp*ds_p_p(2,:))
         dEcoh_p(3) =  sum((1.0d0 + pars_p(4)*s_p) * exp(-pars_p(4) * s_p)-1.0d0)
         dEcoh_p(4) =  sum(s_p*rn_ptemp)
+        dEcoh_p(7) =  sum(pars_l(4)*rn_ltemp*ds_l_p(7,:))&
+                    + sum(pars_p(4)*rn_ptemp*ds_p_p(7,:))
 
 !----------------REFERENCE PAIR POTENTIAL CONTRIBUTIONS------------------------
 
@@ -1720,9 +1771,11 @@ subroutine emt_de_fit(xdata, energy, denergy)
         dvref_l_l(2) = rtemp*sum(rn_ltemp*ds_l_l(2,:))
         dvref_l_l(5) = vref_l/pars_l(5)
         dvref_l_l(6) = - 12.0d0 * pars_l(5) * sum(rn_ltemp *s_l)
+        dvref_l_l(7) = rtemp*sum(rn_ltemp*ds_l_l(7,:))
         ! Derivative with respect to p
         dvref_l_p(1) = rtemp*sum(rn_ltemp*ds_l_p(1,:))
         dvref_l_p(2) = rtemp*sum(rn_ltemp*ds_l_p(2,:))
+        dvref_l_p(7) = rtemp*sum(rn_ltemp*ds_l_p(7,:))
 
     rn_ptemp = exp( -pars_p(6) * s_p)
     rtemp = -12.0d0 * pars_p(5) * pars_p(6)
@@ -1732,9 +1785,11 @@ subroutine emt_de_fit(xdata, energy, denergy)
         dvref_p_p(2) = rtemp*sum(rn_ptemp*ds_p_p(2,:))
         dvref_p_p(5) = vref_p/pars_p(5)
         dvref_p_p(6) = - 12.0d0 * pars_p(5) * sum(rn_ptemp *s_p)
+        dvref_p_p(7) = rtemp*sum(rn_ptemp*ds_p_p(7,:))
         ! Derivative with respect to p
         dvref_p_l(1) = rtemp*sum(rn_ptemp*ds_p_l(1,:))
         dvref_p_l(2) = rtemp*sum(rn_ptemp*ds_p_l(2,:))
+        dvref_p_l(7) = rtemp*sum(rn_ptemp*ds_p_l(7,:))
 
 !-------------------------------TOTAL ENERGY---------------------------------
 
@@ -1748,8 +1803,8 @@ subroutine emt_de_fit(xdata, energy, denergy)
     denergy(11) = dEcoh_l(4)
     denergy(12) = dV_ll(5) + 0.5d0*(dvref_l_l(5)+dV_lp_l(5))
     denergy(13) = dV_ll(6) + 0.5d0*( dV_lp_l(6) + dV_pl_l(6) + dvref_l_l(6))
-    denergy(14) = 0.0d0
-
+    denergy(14) = dEcoh_l(7) + dV_ll(7) + &
+                  0.5d0*(dV_lp_l(7) + dV_pl_l(7) + dvref_l_l(7) + dvref_p_l(7))
     ! Derivative with respect to p (no correction by dEref since those do not
     ! contain any p-contribution)
     denergy(1) = dEcoh_p(1) + 0.5d0*(dvref_l_p(1)+dvref_p_p(1))
@@ -1759,7 +1814,8 @@ subroutine emt_de_fit(xdata, energy, denergy)
     denergy(4) = dEcoh_p(4)
     denergy(5) = dV_pp(5)+0.5d0*(dV_pl_p(5) + dvref_p_p(5))
     denergy(6) = dV_pp(6)+0.5d0*(dV_lp_p(6)+dV_pl_p(6)+dvref_p_p(6))
-    denergy(7) = 0.0d0
+    denergy(7) = dEcoh_p(7) + dV_pp(7) + &
+                 0.5d0*(dV_lp_p(7) + dV_pl_p(7) + dvref_l_p(7) + dvref_p_p(7))
 
     deallocate(rn_ltemp, rn_ptemp)
     deallocate( s_p,  s_l,  sigma_pl,  sigma_lp, sigma_pp,  sigma_ll)
