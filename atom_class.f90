@@ -24,6 +24,8 @@ module atom_class
     integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
     real(8), parameter          :: e_max = 20.0d0
     real(8), parameter          :: cutoff = 1.50d0
+    real(8), parameter          :: beta    = 1.8093997906d0
+    real(8), parameter          :: c44 = 0.0944d0          !eV/A^3, corresponds to 15 GPa (Lit.: 42 GPa)
 
     character(len=80), parameter:: fit_dir    = 'fitdata/'
     character(len=80), parameter:: fit_eq     = 'energy_eq.dat'

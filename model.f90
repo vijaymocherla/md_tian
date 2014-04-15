@@ -6,7 +6,7 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     real(8)             :: YDAT(1000)   !YDAT(N)
     real(8)             :: XDAT(1000,3,1000) !XDAT(N,M)
     real(8)             :: RRR(1000)
-    integer             :: I, JP,ij
+    integer             :: I, JP,ij, rs
 
     real(8)             :: B, P, RES
     integer             :: IP,IB,J
@@ -27,9 +27,35 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
 !    COMMON/debug/ debug(5)
 
     ncells = 1.0d0/((2*rep(1)+1)*(2*rep(2)+1))
-    ! Select if derivatives shall be called or not.
     pars_l = B(8:14)
     pars_p = B(1:7)
+
+!     Calculate V0 from C44
+    do ij = 1,IP
+        if (IB(ij) == 12) then
+            pars_l(5) =  8.0d0*pi*C44*pars_l(7)/&
+                        (pars_l(6)*(beta*pars_l(1)-pars_l(6)))
+            B(12) = pars_l(5)
+        end if
+    end do
+
+    do ij = 1,IP
+        if (IB(ij) == 8) then
+            pars_l(1) =  c44*8.d0*pi*pars_l(7)/(beta*pars_l(5)*pars_l(6)) &
+                       + pars_l(6)/beta
+            B(8) = pars_l(1)
+        end if
+    end do
+
+    do ij = 1,IP
+        if (IB(ij) == 13) then
+            pars_l(6) = beta*pars_l(1)*0.5d0+Sqrt(beta**2*pars_l(1)**2*0.25d0&
+                       -c44*pars_l(7)*8.d0*pi/pars_l(5))
+            B(13) = pars_l(6)
+        end if
+    end do
+
+    ! Select if derivatives shall be called or not.
 
     select case(jp)
 
@@ -80,25 +106,27 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
         if ( ((mod(i,10)==0) .or. (i==N))) then
             !if (iteration > 0) write(*,1000) iteration, i, YDAT(i), F, B(1:14)
             write(*,1000) iteration, i, YDAT(i), YDAT(i)-F, B(1:14)
+            !print *, pars_l(5)*pars_l(6)*(beta*pars_l(1)-pars_l(6))/(pars_l(7)*8.0d0*pi)
         end if
 
-        ! Comment in if you want to Check the Derivatives.
-!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms), energy, denergy)
-!        print *, denergy(7)
+!        ! Comment in if you want to Check the Derivatives.
+!        call emt_ddens_fit(xdat(2,:,:nl_atoms+np_atoms), energy, denergy)
+!        rs=2
+!        print *, denergy(rs)
 !        delta = 0.0001d0
-!        pars_l(7) = pars_l(7) - delta
-!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms), E_dref, denergy)
-!        pars_l(7) = pars_l(7) + 2*delta
-!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms),energy, denergy)
-!        pars_l(7) = pars_l(7) - delta
+!        pars_l(rs) = pars_l(rs) - delta
+!        call emt_ddens_fit(xdat(2,:,:nl_atoms+np_atoms), E_dref, denergy)
+!        pars_l(rs) = pars_l(rs) + 2*delta
+!        call emt_ddens_fit(xdat(2,:,:nl_atoms+np_atoms),energy, denergy)
+!        pars_l(rs) = pars_l(rs) - delta
 !        print*, (E_dref-energy)/(2*delta)
 !        stop
 
-!        pars_p(7) = pars_p(7) - delta
-!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms), E_dref, denergy)
-!        pars_p(7) = pars_p(7) + 2*delta
-!        call emt_de_fit(xdat(2,:,:nl_atoms+np_atoms),energy, denergy)
-!        pars_p(7) = pars_p(7) - delta
+!        pars_p(rs) = pars_p(rs) - delta
+!        call emt_ddens_fit(xdat(2,:,:nl_atoms+np_atoms), E_dref, denergy)
+!        pars_p(rs) = pars_p(rs) + 2*delta
+!        call emt_ddens_fit(xdat(2,:,:nl_atoms+np_atoms),energy, denergy)
+!        pars_p(rs) = pars_p(rs) - delta
 !        print*, (E_dref-energy)/(2*delta)
 !        stop
 

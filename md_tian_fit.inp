@@ -1,9 +1,9 @@
-projectile H 1.0079 emt 7 emt541_H.nml ver 0
-lattice Au 196.96657 emt 7 emt541_Au.nml ver 0
+projectile H 1.0079 emt 7 emt_stroem_H.nml ver 0
+lattice Au 196.96657 emt 7 stroem.06.Au.nml ver 0
 celldim 2 2 4
 rep 1
-conf fit au111_2x2x4.POSCAR 814 545
-aimd 519 200 0.00
+conf fit au111_2x2x4.POSCAR 833 565
+aimd 519 100 0.00
 evasp -24.995689d0  ! A value for Au 2x2
-fitconst 5 3 7 10 11 14
+fitconst 6 3 5 7 10 11 14
 maxit 100
