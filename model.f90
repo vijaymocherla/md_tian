@@ -30,30 +30,30 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     pars_l = B(8:14)
     pars_p = B(1:7)
 
-!     Calculate V0 from C44
-    do ij = 1,IP
-        if (IB(ij) == 12) then
-            pars_l(5) =  8.0d0*pi*C44*pars_l(7)/&
-                        (pars_l(6)*(beta*pars_l(1)-pars_l(6)))
-            B(12) = pars_l(5)
-        end if
-    end do
-
-    do ij = 1,IP
-        if (IB(ij) == 8) then
-            pars_l(1) =  c44*8.d0*pi*pars_l(7)/(beta*pars_l(5)*pars_l(6)) &
-                       + pars_l(6)/beta
-            B(8) = pars_l(1)
-        end if
-    end do
-
-    do ij = 1,IP
-        if (IB(ij) == 13) then
-            pars_l(6) = beta*pars_l(1)*0.5d0+Sqrt(beta**2*pars_l(1)**2*0.25d0&
-                       -c44*pars_l(7)*8.d0*pi/pars_l(5))
-            B(13) = pars_l(6)
-        end if
-    end do
+!!     Calculate V0 from C44
+!    do ij = 1,IP
+!        if (IB(ij) == 12) then
+!            pars_l(5) =  8.0d0*pi*C44*pars_l(7)/&
+!                        (pars_l(6)*(beta*pars_l(1)-pars_l(6)))
+!            B(12) = pars_l(5)
+!        end if
+!    end do
+!
+!    do ij = 1,IP
+!        if (IB(ij) == 8) then
+!            pars_l(1) =  c44*8.d0*pi*pars_l(7)/(beta*pars_l(5)*pars_l(6)) &
+!                       + pars_l(6)/beta
+!            B(8) = pars_l(1)
+!        end if
+!    end do
+!
+!    do ij = 1,IP
+!        if (IB(ij) == 13) then
+!            pars_l(6) = beta*pars_l(1)*0.5d0+Sqrt(beta**2*pars_l(1)**2*0.25d0&
+!                       -c44*pars_l(7)*8.d0*pi/pars_l(5))
+!            B(13) = pars_l(6)
+!        end if
+!    end do
 
     ! Select if derivatives shall be called or not.
 
