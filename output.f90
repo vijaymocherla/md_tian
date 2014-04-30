@@ -239,6 +239,7 @@ function sartre(itraj)
 
     write(str,'(I8.8)') itraj
 
+    sartre = .false.
 
     if (wstep(1) == -1) filename='traj/mxt_fin'//str//'.dat'
     if (wstep(1) == 0) filename='traj/mxt_trj'//str//'.dat'
