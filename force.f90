@@ -17,12 +17,7 @@ module force
     !
     use atom_class
     use md_init
-
     implicit none
-    save
-
-    real(8), private, parameter                 :: beta    = 1.8093997906d0
-    integer, private, dimension(3), parameter   :: b       = (/12, 6, 24/)
 
 contains
 
@@ -95,8 +90,8 @@ subroutine emt(slab, teil)
     rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
-    xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
-    xp = b * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
+    xl = nneighs * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xp = nneighs * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -167,15 +162,7 @@ subroutine emt(slab, teil)
         do j = i+1, slab%n_atoms
 
             ! Applying PBCs
-            r3temp = slab%r(:,i) - slab%r(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
+            call pbc_dist(slab%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
 
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
@@ -211,16 +198,7 @@ subroutine emt(slab, teil)
         do j = i+1, teil%n_atoms
 
             ! Applying PBCs
-            r3temp = teil%r(:,i) - teil%r(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)           ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist( teil%r(:,i), teil%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 
@@ -256,16 +234,7 @@ subroutine emt(slab, teil)
         do j = 1, slab%n_atoms
 
             ! Applying PBCs
-            r3temp = teil%r(:,i) - slab%r(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)       ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist( teil%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 
@@ -524,8 +493,8 @@ subroutine emt_e(slab, teil)
     rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
-    xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
-    xp = b * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
+    xl = nneighs * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xp = nneighs * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -565,16 +534,7 @@ subroutine emt_e(slab, teil)
         do j = i+1, slab%n_atoms
 
             ! Applying PBCs
-            r3temp = slab%r(:,i) - slab%r(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist( slab%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 
@@ -598,16 +558,7 @@ subroutine emt_e(slab, teil)
         do j = i+1, teil%n_atoms
 
             ! Applying PBCs
-            r3temp = teil%r(:,i) - teil%r(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)           ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist( teil%r(:,i), teil%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 
@@ -631,16 +582,7 @@ subroutine emt_e(slab, teil)
         do j = 1, slab%n_atoms
 
             ! Applying PBCs
-            r3temp = teil%r(:,i) - slab%r(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)       ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist(teil%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 
@@ -774,7 +716,7 @@ subroutine emt1(s)
     rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
-    xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xl = nneighs * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -805,15 +747,7 @@ subroutine emt1(s)
         do j = i+1, s%n_atoms
 
             ! Applying PBCs
-            r3temp = s%r(:,i) - s%r(:,j)         ! distance vector
-            r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist(s%r(:,i), s%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 
@@ -956,7 +890,7 @@ subroutine emt1_e(s)
     rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
-    xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xl = nneighs * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -982,16 +916,7 @@ subroutine emt1_e(s)
         do j = i+1, s%n_atoms
 
             ! Applying PBCs
-            r3temp = s%r(:,i) - s%r(:,j)         ! distance vector
-            r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist(s%r(:,i), s%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 
@@ -1105,8 +1030,8 @@ subroutine emt_e_fit(xdata, energy)
     rr = 4.0d0 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
-    xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
-    xp = b * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
+    xl = nneighs * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xp = nneighs * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -1146,16 +1071,7 @@ subroutine emt_e_fit(xdata, energy)
     do i = 1, nl_atoms
         do j = i+1, nl_atoms
 
-            ! Applying PBCs
-            r3temp = xdata(:,i+np_atoms) - xdata(:,j+np_atoms)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
+            call pbc_dist(xdata(:,i+np_atoms), xdata(:,j+np_atoms), cell_mat, cell_imat, r)
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -1171,21 +1087,12 @@ subroutine emt_e_fit(xdata, energy)
 
         end do
     end do
-
+            stop
     ! projectile-projectile
     do i = 1, np_atoms
         do j = i+1, np_atoms
 
-            ! Applying PBCs
-            r3temp = xdata(:,i) - xdata(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)           ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
+            call pbc_dist(xdata(:,i), xdata(:,j), cell_mat, cell_imat, r)
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -1207,16 +1114,7 @@ subroutine emt_e_fit(xdata, energy)
         do j = 1, nl_atoms
 
             ! Applying PBCs
-            r3temp = xdata(:,i) - xdata(:,j+np_atoms)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)       ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist(xdata(:,i), xdata(:,j+np_atoms), cell_mat, cell_imat, r)
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
@@ -1386,8 +1284,8 @@ subroutine emt_de_fit(xdata, energy, denergy)
     rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
-    xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
-    xp = b * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
+    xl = nneighs * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xp = nneighs * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -1475,16 +1373,8 @@ subroutine emt_de_fit(xdata, energy, denergy)
         do j = i+1, nl_atoms
 
             ! Applying PBCs
-            r3temp = xdata(:,i+np_atoms) - xdata(:,j+np_atoms)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist(xdata(:,i+np_atoms), xdata(:,j+np_atoms),&
+                          cell_mat, cell_imat, r)
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
@@ -1521,16 +1411,7 @@ subroutine emt_de_fit(xdata, energy, denergy)
         do j = i+1, np_atoms
 
             ! Applying PBCs
-            r3temp = xdata(:,i) - xdata(:,j)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)           ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist(xdata(:,i), xdata(:,j), cell_mat, cell_imat, r)
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
             theta = 1.0d0 / (1.0d0 + rtemp)
@@ -1567,16 +1448,7 @@ subroutine emt_de_fit(xdata, energy, denergy)
         do j = 1, nl_atoms
 
             ! Applying PBCs
-            r3temp = xdata(:,i) - xdata(:,j+np_atoms)   ! distance vector
-            r3temp = matmul(cell_imat, r3temp)       ! transform to direct coordinates
-
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
+            call pbc_dist(xdata(:,i), xdata(:,j+np_atoms), cell_mat, cell_imat, r)
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -1762,7 +1634,6 @@ subroutine emt_de_fit(xdata, energy, denergy)
 
 end subroutine emt_de_fit
 
-
 subroutine emt1nn(s)
 
 !   Calculates energy and forces with nearest-neighbour EMT potential
@@ -1814,7 +1685,7 @@ subroutine emt1nn(s)
     rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
-    xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
+    xl = nneighs * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
 
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
@@ -1845,15 +1716,7 @@ subroutine emt1nn(s)
         do j = i+1, s%n_atoms
 
             ! Applying PBCs
-            r3temp = s%r(:,i) - s%r(:,j)         ! distance vector
-            r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
-            r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
-            r3temp(2) = r3temp(2) - Anint(r3temp(2))
-            r3temp(3) = r3temp(3) - Anint(r3temp(3))
-            r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
-
-            r =  sqrt(sum(r3temp**2))               ! distance
-
+            call pbc_dist( s%r(:,i), s%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
 

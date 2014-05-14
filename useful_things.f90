@@ -6,7 +6,7 @@ module useful_things
     ! Date          	Author          	History of Revison
     ! ====          	======          	==================
     ! 18.02.2014    	Svenja M. Janke		Original
-    !			Sascha Kandratsenka	
+    !			Sascha Kandratsenka
     !			Dan J. Auerbach
 
 use atom_class
@@ -85,6 +85,9 @@ subroutine norm_dist(vec1, vec2, length, norm)
 end subroutine norm_dist
 
 function E_kin(s,mass)
+    !
+    ! Purpose: kinetic energy
+    !
 
     type(atoms) :: s
     real(8) :: mass, E_kin
@@ -93,5 +96,29 @@ function E_kin(s,mass)
 
 
 end function E_kin
+
+subroutine pbc_dist(a, b, cmat, cimat, r)
+    !
+    ! Purpose: Distance between atoms a and b with periodic boundary conditions
+    !
+
+real(8), dimension(3), intent(in)   :: a, b
+real(8), dimension(3,3), intent(in) :: cmat, cimat
+real(8), intent(out)                :: r
+real(8), dimension(3)               :: r3temp
+
+
+! Applying PBCs
+r3temp = b - a   ! distance vector
+r3temp = matmul(cimat, r3temp)   ! transform to direct coordinates
+
+r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
+r3temp(2) = r3temp(2) - Anint(r3temp(2))
+r3temp(3) = r3temp(3) - Anint(r3temp(3))
+r3temp    = matmul(cmat, r3temp)    ! back to cartesian coordinates
+
+r =  sqrt(sum(r3temp**2))               ! distance
+
+end subroutine pbc_dist
 
 end module useful_things

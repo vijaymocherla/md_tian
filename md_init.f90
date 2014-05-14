@@ -50,17 +50,24 @@ module md_init
     real(8) :: a_lat                ! lattice constant
     real(8),dimension(3,3) :: cell_mat, cell_imat ! simulation cell matrix and its inverse
 
-    character(len=80) :: name_l, pot_l, key_l
+    character(len=80) :: name_l, key_l
     character(len=80) :: name_p = 'Elerium'
     character(len=80) :: key_p_pos = 'top'
-    character(len=80) :: pot_p = 'emt'
+    character(len=80) :: pes_name = 'emt'
     character(len=80) :: key_p = 'empty'
     integer :: npars_l ! number of parameters for lattice
     integer :: npars_p = 0
     integer :: np_atoms, nl_atoms
+    integer :: pes_nigh = 0     ! kind of neighbouring:
+                                !   0 : cutoff radius
+                                !   1 : nearest-neighbours
+                                !   2 : next-nearest-neighbours
+                                !   3 : nxt-next-nearest-neighbours
+    integer, dimension(:,:), allocatable :: neigh_l, neigh_p
     real(8) :: mass_l
     real(8) :: mass_p = 1.0d0
-    real(8), dimension(:), allocatable :: pars_l, pars_p ! potential parameters
+    real(8), dimension(:), allocatable   :: pars_l, pars_p ! potential parameters
+
 
     character(len=80) :: confname_file
     character(len= 7) :: confname
@@ -100,6 +107,7 @@ subroutine simbox_init(slab, teil)
     integer :: i, j, k, l, s, r
     integer :: randk = 13
     integer :: nlnofix, nlno = -1
+    integer, dimension(:,:), intent(out) :: neigh
 
     real(8) :: cellscale, v_pdof, rtemp, empty3(3)
 
@@ -173,7 +181,7 @@ call random_seed(size=randk)
                 read(buffer,*,iostat=ios) wstep
                 if (wstep(1)==-1) wstep(2) = nsteps + 1
             case ('projectile')
-                read(buffer, *, iostat=ios) name_p, mass_p, pot_p, npars_p, &
+                read(buffer, *, iostat=ios) name_p, mass_p, npars_p, &
                                             key_p, mdpa_name_p, n_p0
                 md_algo_p_key = .true.
                 mass_p=mass_p*amu2mass
@@ -200,7 +208,7 @@ call random_seed(size=randk)
                 close(23)
 
             case ('lattice')
-                read(buffer, *, iostat=ios) name_l, mass_l, pot_l, npars_l, &
+                read(buffer, *, iostat=ios) name_l, mass_l, npars_l, &
                                             key_l, mdpa_name_l, nlno
                 md_algo_l_key = .true.
                 mass_l=mass_l*amu2mass
@@ -290,6 +298,9 @@ call random_seed(size=randk)
                         pip_sign = 1
                 end select
 
+            case ('pes')
+                read(buffer, *, iostat=ios) pes_name, pes_nigh
+
             case ('rep')
 
                 read(buffer, *, iostat=ios) rep
@@ -348,6 +359,7 @@ call random_seed(size=randk)
 !                       =====================
 !------------------------------------------------------------------------------
 
+! call subroutine which reads in configuration
 
 
     if (confname == 'poscar' .or. confname == 'fit') then
@@ -395,6 +407,7 @@ call random_seed(size=randk)
             if (n_p > 0) start_p=matmul(d_matrix,start_p)
         end if
 
+!Call Subroutine replication
     !------------------------------------------------------------------------------
     !                    Replicate input cell
     !                    ====================
@@ -436,6 +449,7 @@ call random_seed(size=randk)
         allocate(pos_l(3,n_l), vel_l(3,n_l))
         pos_l = matmul(c_matrix,d_l)
 
+! Call subroutine initiate slab
         ! Exclude fixed atoms
         if (nlno == -1) then
             nlnofix = n_l/celldim(3)*(celldim(3)-1)    ! lowest layer fixed
@@ -459,6 +473,7 @@ call random_seed(size=randk)
         vel_l(2,1:nlnofix) = vel_l(2,1:nlnofix) - sum(vel_l(2,1:nlnofix))/nlnofix
         vel_l(3,1:nlnofix) = vel_l(3,1:nlnofix) - sum(vel_l(3,1:nlnofix))/nlnofix
 
+        ! Prepare the particle
         if (md_algo_p > 0 .and. n_p == 0 .and. n_p0 == 0) then
             md_algo_p = 0
             print *, "Warning: Number of projectiles both in POSCAR and input file is 0."
@@ -515,6 +530,10 @@ call random_seed(size=randk)
         slab%v = vel_l
         ! Assign the number of non-fixed atom
         slab%nofix = nlnofix
+        call neighbour_list(pos_l, n_l, neigh)
+        allocate(neigh_l(n_l,nneighs(pes_nigh)))
+        neigh_l = neigh
+        deallocate(neigh)
 
         ! Create projectile objects
         if (n_p > 0) then
@@ -527,10 +546,12 @@ call random_seed(size=randk)
 
         if (n_p > 0) then
             teil%r = pos_p(:,1:n_p)
+            call neighbour_list(pos_p,n_p, neigh)
+            allocate(neigh_p(n_p,nneighs(pes_nigh)))
             deallocate(pos_p, d_p, start_p)
         end if
 
-        deallocate(vel_l, pos_l, d_l)
+        deallocate(vel_l, pos_l, d_l, neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -558,8 +579,10 @@ call random_seed(size=randk)
             print *,            '         Temperature set to that from input file.'
         end if
         read(38) nspec
+        ! potential and neighbouring
+        read(38) pes_name, pes_nigh
 
-        read(38) name_l, n_l, nlnofix, mass_l, pot_l, npars_l, key_l
+        read(38) name_l, n_l, nlnofix, mass_l, npars_l, key_l
 
         if (.not. allocated(pars_l)) allocate(pars_l(npars_l))
 
@@ -579,7 +602,7 @@ call random_seed(size=randk)
             if (nspec > 1) then
                 ! Projectile hasn't been defined in input file.
                 ! Projectile defined from configuration file
-                read(38) name_p, n_p, npnofix, mass_p, pot_p, npars_p, key_p
+                read(38) name_p, n_p, npnofix, mass_p, npars_p, key_p
                 if (.not. allocated(pars_p)) allocate(pars_p(npars_p))
                 read(38) pars_p, itemp
                 if (.not. md_algo_p_key) md_algo_p = itemp
@@ -607,6 +630,7 @@ call random_seed(size=randk)
         close(38)
 
     endif
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -852,8 +876,10 @@ subroutine traj_init(slab, teil, Eref)
     read(38) dum, Eref
     read(38) dum
     read(38) nspec
+    ! potential and neighbouring
+    read(38) ddd, ddd
 
-    read(38) ddd, ymm, ymm, dum, ddd, ymm, ddd
+    read(38) ddd, ymm, ymm, dum, ymm, ddd
     read(38) (dum, i=1,ymm), ymm
 
     read(38) dum        ! lattice constant makes us happy
@@ -972,6 +998,174 @@ subroutine particle_init(s)
     end if
 
 end subroutine particle_init
+
+subroutine neighbour_list(rpos, nat, neigh)
+!
+!   Purpose:
+!           create list of neighbouring atoms, depending on pes_nigh
+!
+real(8), dimension(:,:), intent(in) :: rpos
+integer, dimension(:,:), intent(out) :: neigh
+integer, intent(in) :: nat
+integer :: i, j, k,l,nn
+real(8) :: r, rcut
+
+
+! Calculate cut/off
+rcut = a_lat/sqrt2 *sqrt(pes_nigh) + 0.1
+! Allocate array for nn-list
+nn = 0
+neigh = 0
+do i = 1, pes_nigh
+    nn = nn + nneighs(i)
+end do
+allocate(neigh(nat,nn))
+
+do i = 1, nat
+l = 1
+do j = i+1, nat
+    ! Calculate r with periodic boundary conditions
+    call pbc_dist( rpos(:,i), rpos(:,j), cell_mat, cell_imat, r)
+    ! Select those which are within cut off
+    if (r <= rcut) then
+        neigh(i,l) = j
+        neigh(j,nneighs(1)-l) = j
+        l = l+1
+    end if
+    k = k+1
+end do
+end do
+
+
+
+end subroutine neighbour_list
+
+subroutine replication(d_l,nat)
+!
+!   Purpose:
+!           Replicate a species according to rep
+
+real(8), dimension(:,:), intent(out) :: d_l
+integer :: itemp, i, l, j, k, nat
+
+itemp=celldim(1)*celldim(2)
+nat=itemp*celldim(3)*(2*rep(1)+1)*(2*rep(2)+1)
+
+allocate(d_l(3,nat))
+d_l = 0.0d0
+
+! Replication
+i = 1
+do l = 1, celldim(3)
+    do j =-rep(1), rep(1)
+        do k=-rep(2), rep(2)
+            d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
+            d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
+            d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
+            i = i+itemp
+        end do
+    end do
+end do
+
+
+end subroutine replication
+
+subroutine slab_init(nat,nlnofix,nlno, vel)
+!
+!   Purpose:
+!           Fix layers, determine atom velocity and correct bu centre of mass
+!
+integer, intent(in) :: nlnofix, nat,nlno
+real(8), dimension(:,:), allocatable, intent(out) :: vel
+real(8) :: v_pdof
+allocate(vel(3,nat))
+
+! Exclude fixed atoms
+if (nlno == -1) then
+    nlnofix = nat/celldim(3)*(celldim(3)-1)    ! lowest layer fixed
+else
+    nlnofix = nat - nlno                       ! whatever number nlno of atoms fixed
+end if
+
+! Sample velocities of lattice atoms from thermal distribution
+! assuming the minimum energy configuration
+v_pdof = sqrt(2.0d0*kB*Tsurf/mass_l)
+
+
+vel = 0.0d0
+do i=1,nlnofix
+    vel(1,i) = normal(0.0d0,v_pdof)
+    vel(2,i) = normal(0.0d0,v_pdof)
+    vel(3,i) = normal(0.0d0,v_pdof)
+enddo
+! Set c.-of-m. velocity to zero
+vel(1,1:nlnofix) = vel(1,1:nlnofix) - sum(vel(1,1:nlnofix))/nlnofix
+vel(2,1:nlnofix) = vel(2,1:nlnofix) - sum(vel(2,1:nlnofix))/nlnofix
+vel(3,1:nlnofix) = vel(3,1:nlnofix) - sum(vel(3,1:nlnofix))/nlnofix
+
+end subroutine slab_init
+
+
+subroutine eq_conf(n_l0, n_p,...)
+!
+!   Purpose:
+!           Read in and prepare configuration of equilibrium positions
+!           from POSCAR
+!
+real(8)                             :: cellscale
+character(len=80)                   :: buffer, coord_sys
+character(len=1)                    :: coord_sys
+real(8), dimension(3,3)             :: c_matrix, d_matrix
+real(8), dimension(:,:), allocatable :: start_l, start_p
+integer                             :: n_l0, n_p
+
+        call open_for_read(38, confname_file)
+
+        read(38,*) buffer
+        read(38,*) cellscale
+        read(38,*) c_matrix
+        read(38,'(A)') buffer
+        read(buffer, *, iostat=ios) n_l0, n_p
+        read(38,*) coord_sys
+
+        a_lat = c_matrix(1,1)/celldim(1)*sqrt2
+
+        ! Construct simulation cell matrix and its inverse
+        d_matrix = 0.0d0
+        d_matrix(1,1) = 1.0d0/c_matrix(1,1)
+        d_matrix(2,2) = 1.0d0/c_matrix(2,2)
+        d_matrix(3,3) = 1.0d0/c_matrix(3,3)
+        d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
+
+        cell_mat = 0.0d0
+        cell_mat(1:2,1) = c_matrix(1:2,1)*(2*rep(1) + 1)
+        cell_mat(1:2,2) = c_matrix(1:2,2)*(2*rep(2) + 1)
+        cell_mat(  3,  3) = c_matrix(3,3)
+
+        cell_imat = 0.0d0
+        cell_imat(1,1:2) = d_matrix(1,1:2)/(2*rep(1) + 1)
+        cell_imat(2,1:2) = d_matrix(2,1:2)/(2*rep(2) + 1)
+        cell_imat(  3,  3) = d_matrix(3,3)
+
+        ! Read in coordinates
+        allocate(start_l(3,n_l0))
+        read(38,*) start_l
+        if (n_p > 0) then
+            allocate(start_p(3,n_p))
+            read(38,*) start_p
+            if (confname == 'fit') &
+               start_p(:,1:n_p) = start_p(:,1:n_p) - spread(start_p(:,1),2,n_p)
+        end if
+
+        ! Transform the read in coordinates into direct if they are cartesians:
+        if (coord_sys == 'C' .or. coord_sys == 'c') then
+            start_l=matmul(d_matrix,start_l)
+            if (n_p > 0) start_p=matmul(d_matrix,start_p)
+        end if
+
+
+
+end subroutine eq_conf
 
 end module md_init
 

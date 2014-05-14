@@ -50,11 +50,13 @@ subroutine full_conf(slab, teil, itraj,Eref)
     else
         write(753) 1
     end if
+    ! potential and neighbouring
+    write(753) pes_name, pes_nigh
     ! name, number of atoms, no of fixed atoms
-    ! masses, potential, number of parameters, file name parameters, paramter values
+    ! masses, number of parameters, file name parameters, paramter values
     ! propagator
     write(753) name_l, slab%n_atoms, slab%nofix,&
-               mass_l, pot_l, npars_l,key_l
+               mass_l, npars_l,key_l
     write(753 )pars_l, md_algo_l
 
     write(753) a_lat        ! lattice constant
@@ -63,7 +65,7 @@ subroutine full_conf(slab, teil, itraj,Eref)
     write(753) slab%r, slab%v, slab%a, slab%dens
     if (teil%n_atoms .ne. 0) then
         write(753) name_p, teil%n_atoms, teil%nofix, &
-                   mass_p, pot_p, npars_p, key_p
+                   mass_p, npars_p, key_p
         write(753) pars_p, md_algo_p
         write(753) teil%r, teil%v, teil%a, teil%dens
     end if
@@ -197,11 +199,13 @@ subroutine out_all(slab, teil, itraj, Eref)
     else
         write(753,*) 1
     end if
+    ! potential and neighbouring
+    write(753,*) pes_name, pes_nigh
     ! name, number of atoms, no of fixed atoms
-    ! masses, potential, number of parameters, file name parameters, paramter values
+    ! masses, number of parameters, file name parameters, paramter values
     ! propagator
     write(753,*) name_l, slab%n_atoms, slab%nofix,&
-               mass_l, pot_l, npars_l,key_l
+               mass_l, npars_l,key_l
     write(753,*) pars_l, md_algo_l
 
     write(753,*) a_lat        ! lattice constant
@@ -210,7 +214,7 @@ subroutine out_all(slab, teil, itraj, Eref)
     write(753,*) slab%r, slab%v, slab%a, slab%dens
     if (teil%n_atoms .ne. 0) then
         write(753,*) name_p, teil%n_atoms, teil%nofix, &
-                   mass_p, pot_p, npars_p, key_p
+                   mass_p, npars_p, key_p
         write(753,*) pars_p, md_algo_p
         write(753,*) teil%r, teil%v, teil%a, teil%dens
     end if

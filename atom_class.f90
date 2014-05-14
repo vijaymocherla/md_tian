@@ -21,9 +21,9 @@ module atom_class
     real(8), parameter          :: kB       = 8.61733238496d-5
     real(8), parameter          :: hbar     = 0.6582119280967d0
     real(8), parameter          :: twelfth  = 1.0d0/12.0d0
-    integer, parameter          :: randseed(13) = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
-    real(8), parameter          :: e_max = 20.0d0
-    real(8), parameter          :: cutoff = 1.50d0
+    integer, parameter          :: randseed(13)   = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
+    real(8), parameter          :: e_max    = 20.0d0
+    real(8), parameter          :: cutoff   = 1.50d0
 
     character(len=80), parameter:: fit_dir    = 'fitdata/'
     character(len=80), parameter:: fit_eq     = 'energy_eq.dat'
@@ -32,7 +32,13 @@ module atom_class
     character(len=80), parameter:: parsname(7)= (/'eta2=','n0=','E0=',&
                                                 'lambda=','V0=','kappa=','s0='/)
 
+    ! geometrical factor for fcc metals
+    ! beta = (16 Pi / 3)^(1/3)/Sqrt(2)
+    real(8), parameter          :: beta     = 1.8093997906d0
 
+    ! Number of nearest, next-nearest and next-next-nearest neighbours
+    ! fcc only. MODIFY FOR NON-FCC-METALS
+    integer, dimension(3), parameter   :: nneighs = (/12, 6, 24/)
 
     ! highest permitted projectile position
     real(8), parameter          :: proj_upgone = 6.1
