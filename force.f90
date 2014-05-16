@@ -161,13 +161,11 @@ subroutine emt(slab, teil)
     do i = 1, slab%n_atoms
         do j = i+1, slab%n_atoms
 
-            ! Applying PBCs
-            call pbc_dist(slab%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
+            ! Applying PBCs. Unit vector: j -> i
+            call pbc_distdir(slab%r(:,j),slab%r(:,i),cell_mat,cell_imat,r,r3temp)
 
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
-
-            r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -197,12 +195,10 @@ subroutine emt(slab, teil)
     do i = 1, teil%n_atoms
         do j = i+1, teil%n_atoms
 
-            ! Applying PBCs
-            call pbc_dist( teil%r(:,i), teil%r(:,j), cell_mat, cell_imat, r)
+            ! Applying PBCs. Unit vector: j -> i
+            call pbc_distdir(teil%r(:,j),teil%r(:,i),cell_mat,cell_imat,r,r3temp)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
-
-            r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -228,17 +224,14 @@ subroutine emt(slab, teil)
 
         end do
     end do
-
     ! projectile-slab
     do i = 1, teil%n_atoms
         do j = 1, slab%n_atoms
 
-            ! Applying PBCs
-            call pbc_dist( teil%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
+            ! Applying PBCs. Unit vector: j -> i
+            call pbc_distdir(slab%r(:,j),teil%r(:,i),cell_mat,cell_imat,r,r3temp)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
-
-            r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -747,11 +740,9 @@ subroutine emt1(s)
         do j = i+1, s%n_atoms
 
             ! Applying PBCs
-            call pbc_dist(s%r(:,i), s%r(:,j), cell_mat, cell_imat, r)
+            call pbc_distdir(s%r(:,j),s%r(:,i),cell_mat,cell_imat,r,r3temp)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
-
-            r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -919,8 +910,6 @@ subroutine emt1_e(s)
             call pbc_dist(s%r(:,i), s%r(:,j), cell_mat, cell_imat, r)
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
-
-            r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
             rtemp = exp(acut*(r - rcut))
@@ -1862,8 +1851,6 @@ subroutine num_emt1(s)
 
 end subroutine num_emt1
 
-
-
 subroutine ldfa(s)
     !
     ! Purpose:
@@ -1905,6 +1892,275 @@ subroutine ldfa(s)
 
 end subroutine ldfa
 
+subroutine lj_e(slab, teil)
+
+! Calculates Lennard-Jones energy
+
+    implicit none
+
+    type(atoms), intent(inout)    :: teil, slab
+
+    integer :: i,j
+
+    real(8) :: r, r6, r12, rcut
+    real(8) :: eps4_l, eps4_p, eps4_pl, sigma_pl
+
+    Epot = 0.0d0
+
+!----------------------VALUES OF FREQUENT USE ---------------------------------
+
+    eps4_l  = 4.0d0*pars_l(1)
+    eps4_p  = 4.0d0*pars_p(1)
+
+    eps4_pl  = sqrt(eps4_l*eps4_l)
+    sigma_pl = 0.50d0*(pars_l(2) + pars_p(2))
+
+!------------------------------ CUT-OFF ---------------------------------------
+
+    rcut = 0.5*cell_mat(1,1)
+
+
+    ! slab-slab
+    do i = 1, slab%n_atoms
+        do j = i+1, slab%n_atoms
+
+            ! Applying PBCs
+            call pbc_dist( slab%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r6 = (pars_l(2)/r)**6
+            r12 = r6*r6
+            Epot = Epot + eps4_l*(r12 - r6)
+
+        end do
+    end do
+
+    ! projectile-projectile
+    do i = 1, teil%n_atoms
+        do j = i+1, teil%n_atoms
+
+            ! Applying PBCs
+            call pbc_dist( teil%r(:,i), teil%r(:,j), cell_mat, cell_imat, r)
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r6 = (pars_p(2)/r)**6
+            r12 = r6*r6
+            Epot = Epot + eps4_p*(r12 - r6)
+
+        end do
+    end do
+
+    ! projectile-slab
+    do i = 1, teil%n_atoms
+        do j = 1, slab%n_atoms
+
+            ! Applying PBCs
+            call pbc_dist(teil%r(:,i), slab%r(:,j), cell_mat, cell_imat, r)
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r6 = (sigma_pl/r)**6
+            r12 = r6*r6
+            Epot = Epot + eps4_pl*(r12 - r6)
+
+        end do
+    end do
+
+end subroutine lj_e
+
+subroutine lj(slab, teil)
+
+! Calculates Lennard-Jones energy and forces
+
+    implicit none
+
+    type(atoms), intent(inout)    :: teil, slab
+
+    integer :: i,j
+
+    real(8) :: r, r6, r12, rcut, dvdr
+    real(8) :: eps4_l, eps4_p, eps4_pl, sigma_pl
+    real(8) :: eps4f_l, eps4f_p, eps4f_pl
+    real(8), dimension(3) :: uvec
+
+    Epot = 0.0d0
+    slab%f = 0.0d0
+    teil%f = 0.0d0
+
+!----------------------VALUES OF FREQUENT USE ---------------------------------
+
+    eps4_l  = 4.0d0*pars_l(1)
+    eps4_p  = 4.0d0*pars_p(1)
+    eps4f_l = 6.0d0*eps4_l/pars_l(2)
+    eps4f_p = 6.0d0*eps4_p/pars_p(2)
+
+    sigma_pl = 0.50d0*(pars_l(2) + pars_p(2))
+    eps4_pl  = sqrt(eps4_l*eps4_l)
+    eps4f_pl = 6.0d0*eps4_pl/sigma_pl
+
+!------------------------------ CUT-OFF ---------------------------------------
+
+    rcut = 0.5*cell_mat(1,1)
+
+
+    ! slab-slab
+    do i = 1, slab%n_atoms
+        do j = i+1, slab%n_atoms
+
+            ! Applying PBCs. Unit vector directs from i to j
+            call pbc_distdir(slab%r(:,i),slab%r(:,j),cell_mat,cell_imat,r, uvec)
+
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r   = pars_l(2)/r
+            r6  = r**6
+            r12 = r6*r6
+            Epot = Epot + eps4_l*(r12 - r6)
+
+            dvdr = eps4f_l*r*(r6 - 2.0d0*r12)
+            slab%f(:,i) = slab%f(:,i) + dvdr*uvec
+            slab%f(:,j) = slab%f(:,j) - dvdr*uvec
+
+        end do
+    end do
+
+    ! projectile-projectile
+    do i = 1, teil%n_atoms
+        do j = i+1, teil%n_atoms
+
+            ! Applying PBCs. Unit vector directs from i to j
+            call pbc_distdir(teil%r(:,i),teil%r(:,j),cell_mat,cell_imat,r, uvec)
+
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r   = pars_p(2)/r
+            r6  = r**6
+            r12 = r6*r6
+            Epot = Epot + eps4_p*(r12 - r6)
+
+            dvdr = eps4f_p*r*(r6 - 2.0d0*r12)
+            teil%f(:,i) = teil%f(:,i) + dvdr*uvec
+            teil%f(:,j) = teil%f(:,j) - dvdr*uvec
+
+        end do
+    end do
+
+    ! projectile-slab
+    do i = 1, teil%n_atoms
+        do j = 1, slab%n_atoms
+
+            ! Applying PBCs. Unit vector directs from i to j
+            call pbc_distdir(teil%r(:,i),slab%r(:,j),cell_mat,cell_imat,r, uvec)
+
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r   = sigma_pl/r
+            r6  = r**6
+            r12 = r6*r6
+            Epot = Epot + eps4_pl*(r12 - r6)
+
+            dvdr = eps4f_pl*r*(r6 - 2.0d0*r12)
+            teil%f(:,i) = teil%f(:,i) + dvdr*uvec
+            slab%f(:,j) = slab%f(:,j) - dvdr*uvec
+        end do
+    end do
+
+end subroutine lj
+
+subroutine lj1_e(s)
+
+! Calculates Lennard-Jones energy
+
+    implicit none
+
+    type(atoms), intent(inout)    :: s
+
+    integer :: i,j
+
+    real(8) :: r, r6, r12, rcut
+    real(8) :: eps4_l
+
+    Epot = 0.0d0
+
+!----------------------VALUES OF FREQUENT USE ---------------------------------
+
+    eps4_l  = 4.0d0*pars_l(1)
+
+!------------------------------ CUT-OFF ---------------------------------------
+
+    rcut = 0.5*cell_mat(1,1)
+
+    do i = 1, s%n_atoms
+        do j = i+1, s%n_atoms
+
+            ! Applying PBCs
+            call pbc_dist( s%r(:,i), s%r(:,j), cell_mat, cell_imat, r)
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r6 = (pars_l(2)/r)**6
+            r12 = r6*r6
+            Epot = Epot + eps4_l*(r12 - r6)
+
+        end do
+    end do
+
+end subroutine lj1_e
+
+subroutine lj1(s)
+
+! Calculates Lennard-Jones energy and forces
+
+    implicit none
+
+    type(atoms), intent(inout)    :: s
+
+    integer :: i,j
+
+    real(8) :: r, r6, r12, rcut, dvdr
+    real(8) :: eps4_l
+    real(8) :: eps4f_l
+    real(8), dimension(3) :: uvec
+
+    Epot = 0.0d0
+    s%f  = 0.0d0
+
+!----------------------VALUES OF FREQUENT USE ---------------------------------
+
+    eps4_l  = 4.0d0*pars_l(1)
+    eps4f_l = 6.0d0*eps4_l/pars_l(2)
+
+!------------------------------ CUT-OFF ---------------------------------------
+
+    rcut = 0.5*cell_mat(1,1)
+
+    do i = 1, s%n_atoms
+        do j = i+1, s%n_atoms
+
+            ! Applying PBCs. Unit vector directs from i to j
+            call pbc_distdir(s%r(:,i),s%r(:,j),cell_mat,cell_imat,r, uvec)
+
+            ! drops atoms outside cutoff
+            if (r > rcut) cycle
+
+            r   = pars_l(2)/r
+            r6  = r**6
+            r12 = r6*r6
+            Epot = Epot + eps4_l*(r12 - r6)
+
+            dvdr = eps4f_l*r*(r6 - 2.0d0*r12)
+            s%f(:,i) = s%f(:,i) + dvdr*uvec
+            s%f(:,j) = s%f(:,j) - dvdr*uvec
+
+        end do
+    end do
+
+end subroutine lj1
 
 end module force
 

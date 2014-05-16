@@ -99,17 +99,19 @@ end function E_kin
 
 subroutine pbc_dist(a, b, cmat, cimat, r)
     !
-    ! Purpose: Distance between atoms a and b with periodic boundary conditions
+    ! Purpose: Distance between atoms a and b
+    !          with taking into account the periodic boundary conditions
     !
 
-real(8), dimension(3), intent(in)   :: a, b
-real(8), dimension(3,3), intent(in) :: cmat, cimat
-real(8), intent(out)                :: r
-real(8), dimension(3)               :: r3temp
+real(8), dimension(3),   intent(in)  :: a, b
+real(8), dimension(3,3), intent(in)  :: cmat, cimat
+real(8),                 intent(out) :: r
+
+real(8), dimension(3) :: r3temp
 
 
 ! Applying PBCs
-r3temp = b - a   ! distance vector
+r3temp = b - a   ! distance vector from a to b
 r3temp = matmul(cimat, r3temp)   ! transform to direct coordinates
 
 r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
@@ -117,8 +119,36 @@ r3temp(2) = r3temp(2) - Anint(r3temp(2))
 r3temp(3) = r3temp(3) - Anint(r3temp(3))
 r3temp    = matmul(cmat, r3temp)    ! back to cartesian coordinates
 
-r =  sqrt(sum(r3temp**2))               ! distance
+r =  sqrt(sum(r3temp*r3temp))               ! distance
 
 end subroutine pbc_dist
+
+subroutine pbc_distdir(a, b, cmat, cimat, r, uvec)
+    !
+    ! Purpose: Distance between atoms a and b and unit vector a-->b them
+    !          with taking into account the periodic boundary conditions
+    !
+
+real(8), dimension(3),   intent(in)  :: a, b
+real(8), dimension(3,3), intent(in)  :: cmat, cimat
+real(8),                 intent(out) :: r
+real(8), dimension(3),   intent(out) :: uvec
+
+real(8), dimension(3) :: r3temp
+
+
+! Applying PBCs
+r3temp = b - a   ! distance vector from a to b
+r3temp = matmul(cimat, r3temp)   ! transform to direct coordinates
+
+r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
+r3temp(2) = r3temp(2) - Anint(r3temp(2))
+r3temp(3) = r3temp(3) - Anint(r3temp(3))
+r3temp    = matmul(cmat, r3temp)    ! back to cartesian coordinates
+
+r =  sqrt(sum(r3temp*r3temp))           ! distance
+uvec = r3temp/r                         ! director from a to b
+
+end subroutine pbc_distdir
 
 end module useful_things

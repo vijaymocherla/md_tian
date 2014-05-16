@@ -60,11 +60,22 @@ allocate(eed(teil%n_atoms),eed_prec(teil%n_atoms))
 !                    CALCULATE THE REFERENCE ENERGY
 !
 !------------------------------------------------------------------------------
+
 if (confname == 'poscar') then
     if (teil%n_atoms > 0) then
-        call emt_e(slab,teil)
+        select case (pes_key)
+            case (0)
+                call emt_e(slab,teil)
+            case (1)
+                call  lj_e(slab,teil)
+        end select
     else
-        call emt1_e(slab)
+        select case (pes_key)
+            case (0)
+                call emt1_e(slab)
+            case (1)
+                call  lj1_e(slab)
+        end select
     end if
     Eref = Epot
 end if
@@ -111,13 +122,23 @@ do itraj = start_tr, ntrajs+start_tr-1
 
     if (teil%n_atoms > 0) then
         call particle_init(teil)
-        call emt(slab, teil)
+        select case (pes_key)
+            case (0)
+                call emt(slab,teil)
+            case (1)
+                call  lj(slab,teil)
+        end select
         if (md_algo_p == 3 .or. md_algo_p == 4 ) call ldfa(teil)
         teil%a  = teil%f*imass_p
         teil%ao = teil%a
         teil%au = teil%ao
     else
-        call emt1(slab)
+        select case (pes_key)
+            case (0)
+                call emt1(slab)
+            case (1)
+                call  lj1(slab)
+        end select
     end if
 
     if (md_algo_l == 3 .or. md_algo_l == 4 ) call ldfa(slab)
@@ -148,11 +169,21 @@ do itraj = start_tr, ntrajs+start_tr-1
 
         if (teil%n_atoms > 0) then
            call propagator_1(teil, md_algo_p, imass_p)     ! projectile kick-drift
-           call emt(slab, teil)                            ! slab-projectile forces
+           select case (pes_key)                           ! slab-projectile forces
+               case (0)
+                   call emt(slab,teil)
+               case (1)
+                   call  lj(slab,teil)
+           end select
            eed = teil%dens                                 ! keep eed values
            call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
         else
-            call emt1(slab)                           ! slab forces
+            select case (pes_key)                          ! slab forces
+                case (0)
+                    call emt1(slab)
+                case (1)
+                    call  lj1(slab)
+            end select
         end if
 
         call propagator_2(slab, md_algo_l, imass_l)         ! slab kick
