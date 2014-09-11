@@ -51,7 +51,7 @@ subroutine full_conf(slab, teil, itraj,Eref)
         write(753) 1
     end if
     ! potential and neighbouring
-    write(753) pes_name, pes_nigh
+    write(753) pes_name!, pes_nigh
     ! name, number of atoms, no of fixed atoms
     ! masses, number of parameters, file name parameters, paramter values
     ! propagator
@@ -200,7 +200,7 @@ subroutine out_all(slab, teil, itraj, Eref)
         write(753,*) 1
     end if
     ! potential and neighbouring
-    write(753,*) pes_name, pes_nigh
+    write(753,*) pes_name!, pes_nigh
     ! name, number of atoms, no of fixed atoms
     ! masses, number of parameters, file name parameters, paramter values
     ! propagator
@@ -221,8 +221,8 @@ subroutine out_all(slab, teil, itraj, Eref)
 
 
     close(753)
-    filename = 'gzip '//filename
-    call system(filename)
+    !filename = 'gzip '//filename
+    !call system(filename)
     save_counter = save_counter+1
 
 end subroutine out_all

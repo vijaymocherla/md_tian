@@ -75,12 +75,13 @@ module md_init
     character(len=80) :: confname_file
     character(len= 7) :: confname
     integer :: n_confs = 1          ! Number of configurations to read in
+    integer :: conf_nr = 1          ! number in name of configurational file to read in.
 
     ! Fit stuctures or fit-related parameters
     real(8), dimension(:,:,:), allocatable :: x_all
     real(8), dimension(:),     allocatable :: y_all
     real(8) :: evasp = -24.995689d0 ! A value for Au 2x2
-    integer, dimension(2) :: rep = (/2,2/)  ! number of repetition layers
+    integer, dimension(2) :: rep = (/0,0/)  ! number of repetition layers
     integer :: ipc ! number of parameters to be held constant during fit
     integer, dimension(20) :: ibt = 0 ! Integer Array containing the subscripts of parameters to be held constant.
     integer :: max_iterations = 10 ! maximum number of iterations
@@ -103,34 +104,27 @@ subroutine simbox_init(slab, teil)
 
     character(len=80) :: pos_init_file
     character(len=80) :: buffer, biffer, label, mdpa_name_p,mdpa_name_l
-    character(len= 1) :: coord_sys
+    character(len=7) :: celln
+!    character(len= 1) :: coord_sys
 
     integer :: pos1, ios = 0, line = 0
-    integer :: n_l0, n_l=1, n_p, n_p0=0, itemp
-    integer :: i, j, k, l, s, r
+    integer :: n_l0, n_l=1, n_p, n_p0=0
+    integer :: i
     integer :: randk = 13
     integer :: nlnofix, nlno = -1
 !    integer, dimension(:,:) :: neigh
 
-    real(8) :: cellscale, v_pdof, rtemp, empty3(3)
 
-    real(8), dimension(3,3) :: c_matrix, d_matrix
+    real(8), dimension(3,3) :: c_matrix
 
-    real(8), dimension(:,:), allocatable :: start_l, start_p, d_l, d_p
-    real(8), dimension(:,:), allocatable :: pos_l, vel_l, pos_p
-!    real(8), dimension(:,:), allocatable :: d_ref
+    real(8), dimension(:,:), allocatable :: start_l
     real(8) :: de_aimd_max
-    integer, dimension(2) :: fracaimd, npts, ea_fraction
+    integer, dimension(2) :: fracaimd
+    integer, dimension(:), allocatable :: nr_at_layer
 
     logical :: exists
 
-    integer :: itraj, q, nspec, npnofix
-
-    real(8), dimension(:,:,:), allocatable :: x_eq, aimd_l, aimd_p, d_l3, d_p3
-    real(8), dimension(:),     allocatable :: y_eq, E_dft1
-    real(8), dimension(:,:),   allocatable :: dfix
-    character(len=80) :: str
-
+    integer :: nspec
 
     if (iargc() == 0) stop " I need an input file"
     call getarg(1, pos_init_file)
@@ -237,7 +231,12 @@ call random_seed(size=randk)
                 end do
                 close(23)
             case ('celldim')
-                read(buffer, *, iostat=ios) celldim
+                read(buffer, *, iostat=ios) celldim, celln
+                call lower_case(celln)
+                if (celln == 'atlayer') then
+                    allocate(nr_at_layer(celldim(3)))
+                    read(buffer,*,iostat=ios) celldim, celln, nr_at_layer ! gives number of atoms in layer if not calculatable from celldim
+                end if
             case ('pip')
                 read(buffer, *, iostat=ios) pip_sign
                 pos1 = scan(buffer, ' ')
@@ -302,7 +301,7 @@ call random_seed(size=randk)
                 end select
 
             case ('pes')
-                read(buffer, *, iostat=ios) pes_name, pes_nigh
+                read(buffer, *, iostat=ios) pes_name!, pes_nigh
                 call lower_case(pes_name)
                 select case(pes_name)
                     case('emt')
@@ -334,8 +333,10 @@ call random_seed(size=randk)
 
             case ('conf')
                 read(buffer, *, iostat=ios) confname, confname_file
+                if (confname == 'geo') read(buffer, *, iostat=ios) &
+                                       confname, confname_file, conf_nr, n_confs
                 if (confname == 'mxt') read(buffer, *, iostat=ios) &
-                                       confname, confname_file, n_confs
+                                       confname, confname_file, conf_nr
                 if (confname == 'fit') read(buffer, *, iostat=ios) &
                                        confname, confname_file, n_confs, fitnum
                 call lower_case(confname)
@@ -373,484 +374,30 @@ call random_seed(size=randk)
 !------------------------------------------------------------------------------
 
 ! call subroutine which reads in configuration
-
-
-    if (confname == 'poscar' .or. confname == 'fit') then
-        call open_for_read(38, confname_file)
-
-        read(38,*) buffer
-        read(38,*) cellscale
-        read(38,*) c_matrix
-        read(38,'(A)') buffer
-        read(buffer, *, iostat=ios) n_l0, n_p
-        read(38,*) coord_sys
-
-        a_lat = c_matrix(1,1)/celldim(1)*sqrt2
-
-        ! Construct simulation cell matrix and its inverse
-        d_matrix = 0.0d0
-        d_matrix(1,1) = 1.0d0/c_matrix(1,1)
-        d_matrix(2,2) = 1.0d0/c_matrix(2,2)
-        d_matrix(3,3) = 1.0d0/c_matrix(3,3)
-        d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
-
-        cell_mat = 0.0d0
-        cell_mat(1:2,1) = c_matrix(1:2,1)*(2*rep(1) + 1)
-        cell_mat(1:2,2) = c_matrix(1:2,2)*(2*rep(2) + 1)
-        cell_mat(  3,  3) = c_matrix(3,3)
-
-        cell_imat = 0.0d0
-        cell_imat(1,1:2) = d_matrix(1,1:2)/(2*rep(1) + 1)
-        cell_imat(2,1:2) = d_matrix(2,1:2)/(2*rep(2) + 1)
-        cell_imat(  3,  3) = d_matrix(3,3)
-
-        ! Read in coordinates
-        allocate(start_l(3,n_l0))
-        read(38,*) start_l
-        if (n_p > 0) then
-            allocate(start_p(3,n_p))
-            read(38,*) start_p
-            if (confname == 'fit') &
-               start_p(:,1:n_p) = start_p(:,1:n_p) - spread(start_p(:,1),2,n_p)
-        end if
-
-        ! Transform the read in coordinates into direct if they are cartesians:
-        if (coord_sys == 'C' .or. coord_sys == 'c') then
-            start_l=matmul(d_matrix,start_l)
-            if (n_p > 0) start_p=matmul(d_matrix,start_p)
-        end if
-
-!Call Subroutine replication
-    !------------------------------------------------------------------------------
-    !                    Replicate input cell
-    !                    ====================
-    !------------------------------------------------------------------------------
-    ! 1. Allocate d_l-array:
-    ! The array size is determined by the amount of repetitions of the cell image:
-    ! the number of lattice atoms in the cell has to be multiplied by the number of
-    ! permutations and then, the number of gold atoms has to be added again, since
-    ! one also wants to keep the original image in the new array.
-    ! temp is the number of gold atoms
-    ! if the cell is translated by 2D-array rep, then (2*rep(1)+1)x(2*rep(2)+1) - 1
-    !                                                   new images are formed
-    ! for example, rep =(/0,0/) yeilds  1x1-1=  0       new images
-    !              rep =(/0,1/)         1x3-1=  2
-    !              rep =(/1,1/)         3x3-1=  8
-    !              rep =(/1,2/)         3x5-1= 14
-    !              rep =(/2,2/)         5x5-1= 24
-    !
-        itemp=celldim(1)*celldim(2)
-        n_l=itemp*celldim(3)*(2*rep(1)+1)*(2*rep(2)+1)
-
-        allocate(d_l(3,n_l))
-        d_l = 0.0d0
-
-        ! Replication
-        i = 1
-        do l = 1, celldim(3)
-            do j =-rep(1), rep(1)
-                do k=-rep(2), rep(2)
-                    d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
-                    d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
-                    d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
-                    i = i+itemp
-                end do
-            end do
-        end do
-
-
-        allocate(pos_l(3,n_l), vel_l(3,n_l))
-        pos_l = matmul(c_matrix,d_l)
-
-! Call subroutine initiate slab
-        ! Exclude fixed atoms
-        if (nlno == -1) then
-            nlnofix = n_l/celldim(3)*(celldim(3)-1)    ! lowest layer fixed
-        else
-            nlnofix = n_l - nlno                       ! whatever number nlno of atoms fixed
-        end if
-
-        ! Sample velocities of lattice atoms from thermal distribution
-        ! assuming the minimum energy configuration
-        v_pdof = sqrt(2.0d0*kB*Tsurf/mass_l)
-
-
-        vel_l = 0.0d0
-        do i=1,nlnofix
-            vel_l(1,i) = normal(0.0d0,v_pdof)
-            vel_l(2,i) = normal(0.0d0,v_pdof)
-            vel_l(3,i) = normal(0.0d0,v_pdof)
-        enddo
-        ! Set c.-of-m. velocity to zero
-        vel_l(1,1:nlnofix) = vel_l(1,1:nlnofix) - sum(vel_l(1,1:nlnofix))/nlnofix
-        vel_l(2,1:nlnofix) = vel_l(2,1:nlnofix) - sum(vel_l(2,1:nlnofix))/nlnofix
-        vel_l(3,1:nlnofix) = vel_l(3,1:nlnofix) - sum(vel_l(3,1:nlnofix))/nlnofix
-
-        ! Prepare the particle
-        if (md_algo_p > 0 .and. n_p == 0 .and. n_p0 == 0) then
-            md_algo_p = 0
-            print *, "Warning: Number of projectiles both in POSCAR and input file is 0."
-            print *, "         Calculations will continue without projectile."
-        end if
-
-        itemp = n_p*(2*rep(1)+1)*(2*rep(2)+1)
-
-        ! Projectile initialization
-        if (md_algo_p > 0) then    ! projectile existence justified
-
-            if (n_p0 == 0) n_p0 = itemp
-
-            allocate(d_p(3,n_p0))
-            d_p = 0.0d0
-            if (itemp < n_p0) then
-                print *, "Warning: Number of projectiles larger than can be produced"
-                print *, "         from repititions of POSCAR file."
-                print *, "         All projectile positions set to zero."
-            else
-                i=1
-                j=1
-                l=1
-
-                do r =-rep(1), rep(1)
-                do s =-rep(2), rep(2)
-                do l =   1, n_p
-
-                    if (j > n_p0) exit
-                    d_p(1,j) = start_p(1,l)+r
-                    d_p(2,j) = start_p(2,l)+s
-                    d_p(3,j) = start_p(3,l)
-
-                    j=j+1
-
-                end do
-                end do
-                end do
-            end if
-
-            allocate(pos_p(3,n_p0))
-            pos_p = matmul(c_matrix,d_p)
-
-        end if
-
-        n_p = n_p0
-
-        close(38)
-
-        ! Create slab objects
-        slab = atoms(n_l)
-        ! Assign slab positions and velocities
-        slab%r = pos_l
-        slab%v = vel_l
-        ! Assign the number of non-fixed atom
-        slab%nofix = nlnofix
-!        call neighbour_list(pos_l, n_l, neigh)
-!        allocate(neigh_l(n_l,nneighs(pes_nigh)))
-!        neigh_l = neigh
-!        deallocate(neigh)
-
-        ! Create projectile objects
-        if (n_p > 0) then
-            teil = atoms(n_p)
-        else
-            teil = atoms(1)
-            teil%n_atoms = 0
-            teil%nofix = 0
-        end if
-
-        if (n_p > 0) then
-            teil%r = pos_p(:,1:n_p)
-!            call neighbour_list(pos_p,n_p, neigh)
-!            allocate(neigh_p(n_p,nneighs(pes_nigh)))
-            deallocate(pos_p, d_p, start_p)
-        end if
-
-!        deallocate(neigh)
-        deallocate(vel_l, pos_l, d_l)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!                                  MXT
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    else if (confname == 'mxt') then
-
-        open(unit=38, file=trim(confname_file)//'/mxt_conf00000001.bin', form='unformatted' )
-
-        read(38) itemp
-        if (step < 0.0d0) then
-            read(38) step
-        else
-            read(38) rtemp
-        end if
-        read(38) rtemp, rtemp
-        read(38) rtemp
-        if (.not. Tsurf_key) then
-            Tsurf = rtemp
-        else if ( rtemp .ne. Tsurf) then
-            print '(A,f5.1,A)', 'Warning: The surface temperature from input (',Tsurf,' K) '
-            print '(A,f5.1,A)', '         and configuration (',rtemp, ' K) files do not match.'
-            print *,            '         Temperature set to that from input file.'
-        end if
-        read(38) nspec
-        ! potential and neighbouring
-        read(38) pes_name, pes_nigh
-
-        read(38) name_l, n_l, nlnofix, mass_l, npars_l, key_l
-
-        if (.not. allocated(pars_l)) allocate(pars_l(npars_l))
-
-        read(38) pars_l, itemp
-        if (.not. md_algo_l_key) md_algo_l = itemp
-
-        read(38) a_lat        ! lattice constant makes us happy
-        read(38) cell_mat     ! Cell matrix
-        read(38) cell_imat    ! inverse cell matrix
-
-        slab = atoms(n_l)
-        slab%nofix = nlnofix
-
-        read(38) slab%r, slab%v, slab%a, slab%dens
-
-         if (.not. md_algo_p_key) then
-            if (nspec > 1) then
-                ! Projectile hasn't been defined in input file.
-                ! Projectile defined from configuration file
-                read(38) name_p, n_p, npnofix, mass_p, npars_p, key_p
-                if (.not. allocated(pars_p)) allocate(pars_p(npars_p))
-                read(38) pars_p, itemp
-                if (.not. md_algo_p_key) md_algo_p = itemp
-                teil = atoms(n_p)
-                read(38) teil%r, teil%v, teil%a, teil%dens
-                teil%nofix = npnofix
-
-            else
-                ! Projectile hasn't been defined in input file.
-                ! It does not exist in configuration file.
-                n_p = 1
-                teil = atoms(n_p)
-                teil%n_atoms = 0
-                teil%nofix = 0
-
-            end if
-
-        else
-            ! Projectile has been defined in input file.
-            ! Definition in input file always outrules other options.
-            teil = atoms(n_p0)
-
-        end if
-
-        close(38)
-
-    endif
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!                                  FIT
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if (confname == 'fit') then
-
-        inquire(directory=trim(fit_dir),exist=exists)
-        if (.not. exists) stop 'The folder with fit data does not exist.'
-        npts = 0
-        ! read in energies
-        if (fracaimd(1) > 0 ) then
-            call open_for_read(39,trim(fit_dir)//fit_eq)
-            i=1
-            do
-                read(39,*,iostat=ios) rtemp, rtemp, rtemp, rtemp, rtemp
-                if(ios <0) exit
-                if (Abs(rtemp - evasp)<=e_max ) i=i+1
-            end do
-            npts(1) = i - 1
-
-            if (npts(1) < fracaimd(1)) then
-                fracaimd(1) = npts(1)
-                print *, 'Your desired number of equilibrium configurations'
-                print *, 'is too large. Setting the number to', fracaimd(1)
-            end if
-            rewind(39)
-        end if
-
-        allocate(y_eq(npts(1)+1),x_eq(npts(1)+1,3,n_l+n_p))
-        do j = 1, n_p
-            x_eq(1,:,j) = teil%r(:,j) + (/0.0d0,0.0d0,6.0d0/)
-        end do
-        x_eq(1,:,n_p+1:n_p+n_l) = slab%r
-        y_eq(1) = evasp
-
-        if (fracaimd(1) > 0 ) then
-            i=2
-            do
-                read(39,*,iostat=ios) rtemp, empty3(1), empty3(2), empty3(3), rtemp
-                if(ios <0) exit
-                if (Abs(rtemp - evasp)<=e_max ) then
-                    y_eq(i) = rtemp
-                    do j = 1, n_p
-                        x_eq(i,:,j) = teil%r(:,j) + empty3
-                    end do
-                    x_eq(i,:,n_p+1:n_p+n_l) = slab%r
-                    i = i + 1
-                end if
-            end do
-            close(39)
-            ea_fraction(1) = npts(1)/fracaimd(1)
-        end if
-
-        !---------------------------READ IN AIMD GEOMETRIES----------------------------
-        if (fracaimd(2) > 0 ) then
-
-            write(str,'(A,I3.3,A)') 'traj',n_confs,'/'
-            ! read in energies and timesteps of the AIMD trajectory
-            ! The geometries and energies are in different files (which is why we are
-            ! opening two here.)
-            call open_for_read(17, trim(fit_dir)//trim(str)//aimd_e)
-            call open_for_read(18, trim(fit_dir)//trim(str)//aimd_pos)
-
-            ! The coefficients of the transformation matrix.
-            read(18,'(A,/////)') buffer
-            n_p0 = 0
-            read(18,'(A)') buffer
-            read(buffer, *) n_l0, n_p0
-
-            ! According to the energy file, we define number of configurations
-            i = 0
-            do
-                read(17,*,iostat=ios)
-                if(ios <0) exit
-                i = i + 1
-            end do
-            rewind(17)
-            npts(2) = i - 3
-
-            allocate(E_dft1(npts(2)))
-            allocate(aimd_l(npts(2),3,n_l0))
-            allocate(dfix(3,n_l0))
-            allocate(aimd_p(npts(2),3,n_p0))
-
-            read(17,'(A)') buffer
-            read(17,*) rtemp, rtemp, E_dft1(1)
-            read(18,*) aimd_l(1,:,:)
-            if (n_p0 > 0) read(18,*) aimd_p(1,:,:)
-
-            j=2
-            do i=2,npts(2)
-                read(17,*) rtemp, rtemp, E_dft1(j)
-                read(18,*) aimd_l(j,:,:)
-                if (n_p0 > 0) read(18,*) aimd_p(j,:,:)
-                rtemp = E_dft1(j-1) - E_dft1(j)
-                if (abs(rtemp) >= de_aimd_max) j = j + 1
-            end do
-            npts(2) = j - 1
-
-            if (npts(2) < fracaimd(2)) then
-                fracaimd(2) = npts(2)
-                print *, 'Your desired number of non-equilibrium configurations'
-                print *, 'is too large. Setting the number to', fracaimd(2)
-            end if
-            close(17)
-            close(18)
-!
-            ! Place AIMD-atoms close to corresponding equilibrium positions
-             do i=1,npts(2)
-                dfix = aimd_l(i,:,:) - start_l
-                do j=1,n_l0
-                       aimd_l(i,1,j)=aimd_l(i,1,j) - ANINT(dfix(1,j))
-                       aimd_l(i,2,j)=aimd_l(i,2,j) - ANINT(dfix(2,j))
-                       aimd_l(i,3,j)=aimd_l(i,3,j) - ANINT(dfix(3,j))
-                end do
-            end do
-
-            itemp=celldim(1)*celldim(2)
-            allocate(d_l3(npts(2),3,n_l))
-
-            ! Replication
-            do q = 1,npts(2)
-                i = 1
-                do l = 1, celldim(3)
-                do j =-rep(1), rep(1)
-                do k =-rep(2), rep(2)
-                    d_l3(q,1,i:i+itemp-1) = aimd_l(q,1,(l-1)*itemp+1:l*itemp)+j
-                    d_l3(q,2,i:i+itemp-1) = aimd_l(q,2,(l-1)*itemp+1:l*itemp)+k
-                    d_l3(q,3,i:i+itemp-1) = aimd_l(q,3,(l-1)*itemp+1:l*itemp)
-                    i = i+itemp
-                end do
-                end do
-                end do
-                d_l3(q,:,:)= matmul(c_matrix,d_l3(q,:,:))
-            end do
-
-            ! Projectile initialization
-            if (n_p0 > 0) then    ! projectile existence justified
-
-                allocate(d_p3(npts(2),3,n_p))
-                j=1
-                do q = 1,npts(2)
-                    j = 1
-                    do r =-rep(1), rep(1)
-                    do s =-rep(2), rep(2)
-                    do l =   1, n_p0
-                        d_p3(q,1,j) = aimd_p(q,1,l)+r
-                        d_p3(q,2,j) = aimd_p(q,2,l)+s
-                        d_p3(q,3,j) = aimd_p(q,3,l)
-                        j=j+1
-                    end do
-                    end do
-                    end do
-                    d_p3(q,:,:)= matmul(c_matrix,d_p3(q,:,:))
-                end do
-
-            end if
-            ea_fraction(2) = npts(2)/fracaimd(2)
-
-        end if
-
-    !------------------------------------------------------------------------------
-    !                   HOW MUCH AIMD CONTRIBUTION DO WE WANT?
-    !                   ======================================
-    !------------------------------------------------------------------------------
-
-        allocate(x_all(fracaimd(1)+fracaimd(2)+1,3,n_p+n_l))
-        allocate(y_all(fracaimd(1)+fracaimd(2)+1))
-        y_all = 0.0d0
-        x_all = 0.0d0
-
-        x_all(1,:,:) = x_eq(1,:,:)
-        x_all(2:fracaimd(1)+1,:,:) = x_eq(2:npts(1)+1:ea_fraction(1),:,:)
-        x_all(fracaimd(1)+2:,:,1:n_p) = d_p3(1:npts(2):ea_fraction(2),:,:)
-        x_all(fracaimd(1)+2:,:,n_p+1:) = d_l3(1:npts(2):ea_fraction(2),:,:)
-
-        y_all(1)  = y_eq(1)
-        y_all(2:fracaimd(1)+1)  = y_eq(2:npts(1)+1:ea_fraction(1))
-        y_all(fracaimd(1)+2:) = E_dft1(1:npts(2):ea_fraction(2))
-        y_all = y_all - evasp
-
-        if (fracaimd(2) > 0 )&
-            deallocate(d_p3, d_l3, aimd_l, aimd_p, E_dft1, dfix)
-        if (fracaimd(1) > 0 ) deallocate(y_eq, x_eq)
-
-        if (teil%n_atoms > 0) then
-            teil%r(3,:) = 6.0d0
-            np_atoms = n_p
-        end if
-        nl_atoms = n_l
-    end if
-
-    ! Create a directory for configuration data
-    inquire(directory='conf',exist=exists)
-    if (.not. exists) then
-        call system('mkdir conf')
-    end if
-    ! Create a directory for trajectory data
-    inquire(directory='traj',exist=exists)
-    if (.not. exists) then
-        call system('mkdir traj')
-    end if
-
-    if (confname == 'poscar' .or. confname == 'fit') deallocate(start_l)
+if (confname == 'poscar' .or. confname == 'fit') then
+    call read_conf(nr_at_layer, nlnofix, nlno, n_p, n_l, n_p0, &
+                   slab, teil, start_l, c_matrix)
+! mxt
+else if (confname == 'mxt' .or. 'geo') then
+    call read_mxt(nspec, teil, slab, n_p0)
+end if
+if (confname == 'fit') then
+    call read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
+                    de_aimd_max, start_l, c_matrix)
+end if
+
+! Create a directory for configuration data
+inquire(directory='conf',exist=exists)
+if (.not. exists) then
+    call system('mkdir conf')
+end if
+! Create a directory for trajectory data
+inquire(directory='traj',exist=exists)
+if (.not. exists) then
+    call system('mkdir traj')
+end if
+
+if (confname == 'poscar' .or. confname == 'fit') deallocate(start_l)
 
 end subroutine simbox_init
 
@@ -867,7 +414,7 @@ subroutine traj_init(slab, teil, Eref)
     type(atoms), intent(inout) :: slab, teil   ! hold r, v and f for atoms in the box
 
     integer :: traj_no, nspec, i
-    real(8) :: dum, Eref, v_pdof
+    real(8) :: dum, Eref
     integer :: ymm, nof
     character(len=80) :: ddd
     character(len=8) :: str
@@ -881,7 +428,11 @@ subroutine traj_init(slab, teil, Eref)
 
 
     ! Get random integer to open random trajectory for configurations
-    write(str,'(I8.8)') int(ran1()*n_confs)+1
+    if (confname == 'mxt') then
+        write(str,'(I8.8)') int(ran1()*n_confs)+1
+    elseif (confname == 'geo') then
+        write(str,'(I8.8)') conf_nr
+    end if
 
     open(unit=38, file=trim(confname_file)//'/mxt_conf'//str//'.bin', form='unformatted' )
 
@@ -891,7 +442,7 @@ subroutine traj_init(slab, teil, Eref)
     read(38) dum
     read(38) nspec
     ! potential and neighbouring
-    read(38) ddd, ymm
+    read(38) ddd!, ymm
 
     read(38) ddd, ymm, nof, dum, ymm, ddd
     read(38) (dum, i=1,ymm), ymm
@@ -936,7 +487,7 @@ subroutine particle_init(s)
     !
 
     type(atoms) :: s
-    integer :: i, j, n_p
+    integer :: i, n_p
     real(8) :: vinc
     real(8), dimension(2) :: cc1, cc2
     real(8) :: v_pdof = 0.0d0
@@ -1070,132 +621,572 @@ end do
 
 end subroutine neighbour_list
 
-!subroutine replication(d_l,nat)
-!!
-!!   Purpose:
-!!           Replicate a species according to rep
-!
-!real(8), dimension(:,:), intent(out) :: d_l
-!integer :: itemp, i, l, j, k, nat
-!
-!itemp=celldim(1)*celldim(2)
-!nat=itemp*celldim(3)*(2*rep(1)+1)*(2*rep(2)+1)
-!
-!allocate(d_l(3,nat))
-!d_l = 0.0d0
-!
-!! Replication
-!i = 1
-!do l = 1, celldim(3)
-!    do j =-rep(1), rep(1)
-!        do k=-rep(2), rep(2)
-!            d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
-!            d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
-!            d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
-!            i = i+itemp
-!        end do
-!    end do
-!end do
-!
-!
-!end subroutine replication
+subroutine read_conf(nr_at_layer, nlnofix, nlno, n_p, n_l, n_p0, &
+                   slab, teil, start_l, c_matrix)
+    !
+    ! Purpose:
+    !           Read in geometries from POSCAR file and multiply them
+    !
+type(atoms), intent(out) :: teil, slab
 
-!subroutine slab_init(nat,nlnofix,nlno, vel)
-!!
-!!   Purpose:
-!!           Fix layers, determine atom velocity and correct bu centre of mass
-!!
-!integer, intent(in) :: nlnofix, nat,nlno
-!real(8), dimension(:,:), allocatable, intent(out) :: vel
-!real(8) :: v_pdof
-!allocate(vel(3,nat))
-!
-!! Exclude fixed atoms
-!if (nlno == -1) then
-!    nlnofix = nat/celldim(3)*(celldim(3)-1)    ! lowest layer fixed
-!else
-!    nlnofix = nat - nlno                       ! whatever number nlno of atoms fixed
-!end if
-!
-!! Sample velocities of lattice atoms from thermal distribution
-!! assuming the minimum energy configuration
-!v_pdof = sqrt(2.0d0*kB*Tsurf/mass_l)
-!
-!
-!vel = 0.0d0
-!do i=1,nlnofix
-!    vel(1,i) = normal(0.0d0,v_pdof)
-!    vel(2,i) = normal(0.0d0,v_pdof)
-!    vel(3,i) = normal(0.0d0,v_pdof)
-!enddo
-!! Set c.-of-m. velocity to zero
-!vel(1,1:nlnofix) = vel(1,1:nlnofix) - sum(vel(1,1:nlnofix))/nlnofix
-!vel(2,1:nlnofix) = vel(2,1:nlnofix) - sum(vel(2,1:nlnofix))/nlnofix
-!vel(3,1:nlnofix) = vel(3,1:nlnofix) - sum(vel(3,1:nlnofix))/nlnofix
-!
-!end subroutine slab_init
+character(len=80) :: buffer
+real(8) :: cellscale
+real(8), dimension(3,3) :: c_matrix, d_matrix
+real(8), dimension(:,:), allocatable :: start_l, start_p
+real(8), dimension(:,:), allocatable :: pos_l, vel_l, pos_p
+integer :: n_l0, n_l, n_p, n_p0
+integer :: nlnofix, nlno
+integer :: ios
+character(len= 1) :: coord_sys
+integer, dimension(:), allocatable :: nr_at_layer
+
+call open_for_read(38, confname_file)
+
+read(38,*) buffer
+read(38,*) cellscale
+read(38,*) c_matrix
+read(38,'(A)') buffer
+read(buffer, *, iostat=ios) n_l0, n_p
+read(38,*) coord_sys
+a_lat = c_matrix(1,1)/celldim(1)*sqrt2
+
+! Construct simulation cell matrix and its inverse
+d_matrix = 0.0d0
+d_matrix(1,1) = 1.0d0/c_matrix(1,1)
+d_matrix(2,2) = 1.0d0/c_matrix(2,2)
+d_matrix(3,3) = 1.0d0/c_matrix(3,3)
+d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
+
+cell_mat = 0.0d0
+cell_mat(1:2,1) = c_matrix(1:2,1)*(2*rep(1) + 1)
+cell_mat(1:2,2) = c_matrix(1:2,2)*(2*rep(2) + 1)
+cell_mat(3  ,3) = c_matrix(3  ,3)
+
+cell_imat = 0.0d0
+cell_imat(1,1:2) = d_matrix(1,1:2)/(2*rep(1) + 1)
+cell_imat(2,1:2) = d_matrix(2,1:2)/(2*rep(2) + 1)
+cell_imat(3,  3) = d_matrix(3,  3)
 
 
-!subroutine eq_conf(n_l0, n_p,...)
-!!
-!!   Purpose:
-!!           Read in and prepare configuration of equilibrium positions
-!!           from POSCAR
-!!
-!real(8)                             :: cellscale
-!character(len=80)                   :: buffer, coord_sys
-!character(len=1)                    :: coord_sys
-!real(8), dimension(3,3)             :: c_matrix, d_matrix
-!real(8), dimension(:,:), allocatable :: start_l, start_p
-!integer                             :: n_l0, n_p
-!
-!        call open_for_read(38, confname_file)
-!
-!        read(38,*) buffer
-!        read(38,*) cellscale
-!        read(38,*) c_matrix
-!        read(38,'(A)') buffer
-!        read(buffer, *, iostat=ios) n_l0, n_p
-!        read(38,*) coord_sys
-!
-!        a_lat = c_matrix(1,1)/celldim(1)*sqrt2
-!
-!        ! Construct simulation cell matrix and its inverse
-!        d_matrix = 0.0d0
-!        d_matrix(1,1) = 1.0d0/c_matrix(1,1)
-!        d_matrix(2,2) = 1.0d0/c_matrix(2,2)
-!        d_matrix(3,3) = 1.0d0/c_matrix(3,3)
-!        d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
-!
-!        cell_mat = 0.0d0
-!        cell_mat(1:2,1) = c_matrix(1:2,1)*(2*rep(1) + 1)
-!        cell_mat(1:2,2) = c_matrix(1:2,2)*(2*rep(2) + 1)
-!        cell_mat(  3,  3) = c_matrix(3,3)
-!
-!        cell_imat = 0.0d0
-!        cell_imat(1,1:2) = d_matrix(1,1:2)/(2*rep(1) + 1)
-!        cell_imat(2,1:2) = d_matrix(2,1:2)/(2*rep(2) + 1)
-!        cell_imat(  3,  3) = d_matrix(3,3)
-!
-!        ! Read in coordinates
-!        allocate(start_l(3,n_l0))
-!        read(38,*) start_l
-!        if (n_p > 0) then
-!            allocate(start_p(3,n_p))
-!            read(38,*) start_p
-!            if (confname == 'fit') &
-!               start_p(:,1:n_p) = start_p(:,1:n_p) - spread(start_p(:,1),2,n_p)
-!        end if
-!
-!        ! Transform the read in coordinates into direct if they are cartesians:
-!        if (coord_sys == 'C' .or. coord_sys == 'c') then
-!            start_l=matmul(d_matrix,start_l)
-!            if (n_p > 0) start_p=matmul(d_matrix,start_p)
-!        end if
-!
-!
-!
-!end subroutine eq_conf
+! Read in coordinates
+allocate(start_l(3,n_l0))
+read(38,*) start_l
+if (n_p > 0) then
+    allocate(start_p(3,n_p))
+    read(38,*) start_p
+    if (confname == 'fit') &
+       start_p(:,1:n_p) = start_p(:,1:n_p) - spread(start_p(:,1),2,n_p)
+end if
+
+! Transform the read in coordinates into direct if they are cartesians:
+if (coord_sys == 'C' .or. coord_sys == 'c') then
+    start_l=matmul(d_matrix,start_l)
+    if (n_p > 0) start_p=matmul(d_matrix,start_p)
+end if
+! Call subroutine prepare slab
+! With repetition of cell.
+call prep_slab(n_l0, start_l, c_matrix, nr_at_layer, nlnofix, nlno,&
+               n_l, pos_l, vel_l)
+! Create slab objects
+slab = atoms(n_l)
+! Assign slab positions and velocities
+slab%r = pos_l
+slab%v = vel_l
+
+! Assign the number of non-fixed atom
+slab%nofix = nlnofix
+!        call neighbour_list(pos_l, n_l, neigh)
+!        allocate(neigh_l(n_l,nneighs(pes_nigh)))
+!        neigh_l = neigh
+!        deallocate(neigh)
+
+! Check if particle present.
+if (md_algo_p > 0 .and. n_p == 0 .and. n_p0 == 0) then
+    md_algo_p = 0
+    print *, "Warning: Number of projectiles both in POSCAR and input file is 0."
+    print *, "         Calculations will continue without projectile."
+end if
+
+if (md_algo_p > 0) then
+    call prep_teil(n_p, n_p0, start_p, c_matrix, pos_p)
+end if
+n_p = n_p0
+! Create projectile objects
+if (n_p > 0) then
+    teil = atoms(n_p)
+    teil%r = pos_p(:,1:n_p)
+!            call neighbour_list(pos_p,n_p, neigh)
+!            allocate(neigh_p(n_p,nneighs(pes_nigh)))
+    deallocate(start_p, pos_p)
+else
+    teil = atoms(1)
+    teil%n_atoms = 0
+    teil%nofix = 0
+end if
+
+close(38)
+
+deallocate(pos_l, vel_l)
+
+end subroutine read_conf
+
+subroutine prep_slab(n_l0, start_l, c_matrix, nr_at_layer, &
+                     nlnofix, nlno, n_l, pos_l, vel_l)
+    !
+    ! Purpose:
+    !------------------------------------------------------------------------------
+    !                    Replicate input cell
+    !                    ====================
+    !------------------------------------------------------------------------------
+    ! The final array size for the lattice and the particle is determined by the
+    ! repetitions of the cell image.
+    ! 1. The new array is build by repetitions of the old one if rep is specified
+    !    in the input file. For example:
+    !       for example,    rep =(/0,0/) yields  1x1-1=  0       new images
+    !                       rep =(/0,1/)         1x3-1=  2
+    !                       rep =(/1,1/)         3x3-1=  8
+    !                       rep =(/1,2/)         3x5-1= 14
+    !                       rep =(/2,2/)         5x5-1= 24
+    !
+    ! 2. 2*rep(1)+1)x(2*rep(2)+1) - 1 new images are formed.
+    ! 3. Every layer is repeated independendly. That means layer can hold a
+    !    different number of atoms.
+    ! 4. If rep is not given, then no repetition takes place.
+    ! 5. Set velocities.
+
+integer, dimension(:), allocatable :: nr_at_layer
+integer :: i, j, k, l, itemp, itemp2
+integer :: n_l, n_l0
+integer :: nlnofix, nlno
+real(8), dimension(:,:), allocatable :: pos_l, d_l, start_l, vel_l
+real(8), dimension(3,3) :: c_matrix
+real(8) :: v_pdof
+
+! calculate new cellsize
+! why can't we just take n_l0? We should already have the number of slab atoms.
+if (allocated(nr_at_layer) .eqv. .true. .and. rep(1) > 0 .or. rep(2) > 0) then
+    itemp = 0
+    do i = 1,celldim(3)
+        itemp = itemp + nr_at_layer(i)
+    end do
+    n_l = itemp * (2*rep(1)+1)*(2*rep(2)+1)
+else if (allocated(nr_at_layer) .eqv. .false. &
+        .and. rep(1) > 0 .and. rep(2) > 0) then
+    itemp=celldim(1)*celldim(2)
+    n_l=itemp*celldim(3)*(2*rep(1)+1)*(2*rep(2)+1)
+else
+    n_l = n_l0
+end if
+
+allocate(d_l(3,n_l))
+d_l = 0.0d0
+! Replication. Every layer is repeated uniquely.
+i = 1
+itemp = 0
+if (allocated(nr_at_layer) .eqv. .true. .and. rep(1) > 0 .or. rep(2) > 0) then
+    itemp2 = 1
+    do l = 1, celldim(3)
+        do j = -rep(1), rep(1)
+            do k = -rep(2), rep(2)
+                itemp = nr_at_layer(l)
+                d_l(1,i:i+itemp-1) = start_l(1,itemp2:itemp2+nr_at_layer(l)-1)+j
+                d_l(2,i:i+itemp-1) = start_l(2,itemp2:itemp2+nr_at_layer(l)-1)+k
+                d_l(3,i:i+itemp-1) = start_l(3,itemp2:itemp2+nr_at_layer(l)-1)
+                i = i + itemp
+            end do
+        end do
+        itemp2 = itemp2+nr_at_layer(l)
+    end do
+else if (allocated(nr_at_layer) .eqv. .false. &
+        .and. rep(1) > 0 .and. rep(2) > 0) then
+
+    itemp=celldim(1)*celldim(2)
+    i = 1
+    do l = 1, celldim(3)
+        do j =-rep(1), rep(1)
+            do k=-rep(2), rep(2)
+                d_l(1,i:i+itemp-1) = start_l(1,(l-1)*itemp+1:l*itemp)+j
+                d_l(2,i:i+itemp-1) = start_l(2,(l-1)*itemp+1:l*itemp)+k
+                d_l(3,i:i+itemp-1) = start_l(3,(l-1)*itemp+1:l*itemp)
+                i = i+itemp
+            end do
+        end do
+    end do
+else
+    d_l = start_l
+end if
+
+allocate(pos_l(3,n_l), vel_l(3,n_l))
+pos_l = matmul(c_matrix,d_l)
+
+! Exclude fixed atoms
+if (nlno == -1 .and. allocated(nr_at_layer) == .false.) then
+    nlnofix = n_l/celldim(3)*(celldim(3)-1)    ! lowest layer fixed
+else if (nlno == -1 .and. allocated(nr_at_layer) == .true.) then
+    ! calculate number of remaining atoms when lowest layer fixed
+    nlnofix = n_l - nr_at_layer(celldim(3))*(2*rep(1)+1)*(2*rep(2)+1)
+else
+    nlnofix = n_l - nlno                       ! whatever number nlno of atoms fixed
+end if
+
+! Sample velocities of lattice atoms from thermal distribution
+! assuming the minimum energy configuration
+v_pdof = sqrt(2.0d0*kB*Tsurf/mass_l)
+
+vel_l = 0.0d0
+do i=1,nlnofix
+    vel_l(1,i) = normal(0.0d0,v_pdof)
+    vel_l(2,i) = normal(0.0d0,v_pdof)
+    vel_l(3,i) = normal(0.0d0,v_pdof)
+enddo
+! Set c.-of-m. velocity to zero
+vel_l(1,1:nlnofix) = vel_l(1,1:nlnofix) - sum(vel_l(1,1:nlnofix))/nlnofix
+vel_l(2,1:nlnofix) = vel_l(2,1:nlnofix) - sum(vel_l(2,1:nlnofix))/nlnofix
+vel_l(3,1:nlnofix) = vel_l(3,1:nlnofix) - sum(vel_l(3,1:nlnofix))/nlnofix
+
+deallocate(d_l)
+
+end subroutine prep_slab
+
+subroutine prep_teil(n_p, n_p0, start_p, c_matrix, pos_p)
+    !
+    ! Purpose:
+    !           Prepares and redublicates particle
+    !           Particle does not have a crystal structure, therefore no layers
+integer :: n_p, n_p0
+real(8), dimension(:,:), allocatable :: start_p, pos_p, d_p
+real(8), dimension(3,3) :: c_matrix
+integer :: itemp, i, j, l, r, s
+
+itemp = n_p*(2*rep(1)+1)*(2*rep(2)+1)
+if (n_p0 == 0) n_p0 = itemp
+
+allocate(d_p(3,n_p0))
+d_p = 0.0d0
+if (itemp < n_p0) then
+    print *, "Warning: Number of projectiles larger than can be produced"
+    print *, "         from repititions of POSCAR file."
+    print *, "         All projectile positions set to zero."
+else
+    i=1
+    j=1
+    l=1
+
+    do r =-rep(1), rep(1)
+    do s =-rep(2), rep(2)
+    do l =   1, n_p
+
+        if (j > n_p0) exit
+        d_p(1,j) = start_p(1,l)+r
+        d_p(2,j) = start_p(2,l)+s
+        d_p(3,j) = start_p(3,l)
+
+        j=j+1
+    end do
+    end do
+    end do
+end if
+
+allocate(pos_p(3,n_p0))
+pos_p = matmul(c_matrix,d_p)
+
+deallocate(d_p)
+
+end subroutine prep_teil
+
+subroutine read_mxt(nspec, teil, slab, n_p0)
+    !
+    ! Purpose:
+    !           Read in configurations from the mxt-file
+
+    type(atoms), intent(out) :: teil, slab
+    integer :: nspec, n_p0
+    integer :: n_l, nlnofix, n_p, npnofix
+    integer :: itemp
+    real(8) :: rtemp
+    character(len=8) :: str
+
+    if (confname == 'geo') then
+        write(str,'(I8.8)') conf_nr
+        open(unit=38, file=trim(confname_file)//'/mxt_conf'//str//'.bin', &
+            form='unformatted' )
+    else
+        open(unit=38, file=trim(confname_file)//'/mxt_conf00000001.bin', &
+        form='unformatted' )
+    end if
+
+    read(38) itemp
+    if (step < 0.0d0) then
+        read(38) step
+    else
+        read(38) rtemp
+    end if
+    read(38) rtemp, rtemp
+    read(38) rtemp
+    if (.not. Tsurf_key) then
+        Tsurf = rtemp
+    else if ( rtemp .ne. Tsurf) then
+        print '(A,f5.1,A)', 'Warning: The surface temperature from input (',Tsurf,' K) '
+        print '(A,f5.1,A)', '         and configuration (',rtemp, ' K) files do not match.'
+        print *,            '         Temperature set to that from input file.'
+    end if
+    read(38) nspec
+    ! potential and neighbouring
+    read(38) pes_name!, pes_nigh
+
+    read(38) name_l, n_l, nlnofix, mass_l, npars_l, key_l
+
+    if (.not. allocated(pars_l)) allocate(pars_l(npars_l))
+
+    read(38) pars_l, itemp
+    if (.not. md_algo_l_key) md_algo_l = itemp
+
+    read(38) a_lat        ! lattice constant makes us happy
+    read(38) cell_mat     ! Cell matrix
+    read(38) cell_imat    ! inverse cell matrix
+
+    slab = atoms(n_l)
+    slab%nofix = nlnofix
+
+    read(38) slab%r, slab%v, slab%a, slab%dens
+
+    if (.not. md_algo_p_key) then
+        if (nspec > 1) then
+            ! Projectile hasn't been defined in input file.
+            ! Projectile defined from configuration file
+            read(38) name_p, n_p, npnofix, mass_p, npars_p, key_p
+            if (.not. allocated(pars_p)) allocate(pars_p(npars_p))
+            read(38) pars_p, itemp
+            if (.not. md_algo_p_key) md_algo_p = itemp
+            teil = atoms(n_p)
+            read(38) teil%r, teil%v, teil%a, teil%dens
+            teil%nofix = npnofix
+        else
+            ! Projectile hasn't been defined in input file.
+            ! It does not exist in configuration file.
+            n_p = 1
+            teil = atoms(n_p)
+            teil%n_atoms = 0
+            teil%nofix = 0
+        end if
+    else
+        ! Projectile has been defined in input file.
+        ! Definition in input file always outrules other options.
+        teil = atoms(n_p0)
+    end if
+    close(38)
+
+end subroutine read_mxt
+
+subroutine read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
+                    de_aimd_max, start_l, c_matrix)
+
+    !
+    ! Purpose:
+    !           Read in data for fit.
+    !
+type(atoms) :: slab, teil
+
+integer :: exists, n_p, n_l, n_p0, n_l0
+integer, dimension(2) :: fracaimd, npts, ea_fraction
+real(8) :: de_aimd_max
+real(8), dimension(3,3):: c_matrix
+
+real(8) :: rtemp
+integer :: i, j, ios, itemp, q, l, k, r, s
+real(8), dimension(3) :: empty3
+real(8), dimension(:), allocatable :: y_eq, E_dft1
+real(8), dimension(:,:), allocatable :: dfix, start_l
+real(8), dimension(:,:,:),allocatable :: x_eq, aimd_l, aimd_p, d_l3, d_p3
+character(len=80) :: str, buffer
+
+inquire(directory=trim(fit_dir),exist=exists)
+if (.not. exists) stop 'The folder with fit data does not exist.'
+npts = 0
+! read in energies
+if (fracaimd(1) > 0 ) then
+    call open_for_read(39,trim(fit_dir)//fit_eq)
+    i=1
+    do
+        read(39,*,iostat=ios) rtemp, rtemp, rtemp, rtemp, rtemp
+        if(ios <0) exit
+        if (Abs(rtemp - evasp)<=e_max ) i=i+1
+    end do
+    npts(1) = i - 1
+
+    if (npts(1) < fracaimd(1)) then
+        fracaimd(1) = npts(1)
+        print *, 'Your desired number of equilibrium configurations'
+        print *, 'is too large. Setting the number to', fracaimd(1)
+    end if
+    rewind(39)
+end if
+
+allocate(y_eq(npts(1)+1),x_eq(npts(1)+1,3,n_l+n_p))
+do j = 1, n_p
+    x_eq(1,:,j) = teil%r(:,j) + (/0.0d0,0.0d0,6.0d0/)
+end do
+x_eq(1,:,n_p+1:n_p+n_l) = slab%r
+y_eq(1) = evasp
+
+if (fracaimd(1) > 0 ) then
+    i=2
+    do
+        read(39,*,iostat=ios) rtemp, empty3(1), empty3(2), empty3(3), rtemp
+        if(ios <0) exit
+        if (Abs(rtemp - evasp)<=e_max ) then
+            y_eq(i) = rtemp
+            do j = 1, n_p
+                x_eq(i,:,j) = teil%r(:,j) + empty3
+            end do
+            x_eq(i,:,n_p+1:n_p+n_l) = slab%r
+            i = i + 1
+        end if
+    end do
+    close(39)
+    ea_fraction(1) = npts(1)/fracaimd(1)
+end if
+
+!---------------------------READ IN AIMD GEOMETRIES----------------------------
+if (fracaimd(2) > 0 ) then
+
+    write(str,'(A,I3.3,A)') 'traj',n_confs,'/'
+    ! read in energies and timesteps of the AIMD trajectory
+    ! The geometries and energies are in different files (which is why we are
+    ! opening two here.)
+    call open_for_read(17, trim(fit_dir)//trim(str)//aimd_e)
+    call open_for_read(18, trim(fit_dir)//trim(str)//aimd_pos)
+
+    ! The coefficients of the transformation matrix.
+    read(18,'(A,/////)') buffer
+    n_p0 = 0
+    read(18,'(A)') buffer
+    read(buffer, *) n_l0, n_p0
+
+    ! According to the energy file, we define number of configurations
+    i = 0
+    do
+        read(17,*,iostat=ios)
+        if(ios <0) exit
+        i = i + 1
+    end do
+    rewind(17)
+    npts(2) = i - 3
+
+    allocate(E_dft1(npts(2)))
+    allocate(aimd_l(npts(2),3,n_l0))
+    allocate(dfix(3,n_l0))
+    allocate(aimd_p(npts(2),3,n_p0))
+
+    read(17,'(A)') buffer
+    read(17,*) rtemp, rtemp, E_dft1(1)
+    read(18,*) aimd_l(1,:,:)
+    if (n_p0 > 0) read(18,*) aimd_p(1,:,:)
+
+    j=2
+    do i=2,npts(2)
+        read(17,*) rtemp, rtemp, E_dft1(j)
+        read(18,*) aimd_l(j,:,:)
+        if (n_p0 > 0) read(18,*) aimd_p(j,:,:)
+        rtemp = E_dft1(j-1) - E_dft1(j)
+        if (abs(rtemp) >= de_aimd_max) j = j + 1
+    end do
+    npts(2) = j - 1
+
+    if (npts(2) < fracaimd(2)) then
+        fracaimd(2) = npts(2)
+        print *, 'Your desired number of non-equilibrium configurations'
+        print *, 'is too large. Setting the number to', fracaimd(2)
+    end if
+    close(17)
+    close(18)
+    ! Place AIMD-atoms close to corresponding equilibrium positions
+     do i=1,npts(2)
+        dfix = aimd_l(i,:,:) - start_l
+        do j=1,n_l0
+               aimd_l(i,1,j)=aimd_l(i,1,j) - ANINT(dfix(1,j))
+               aimd_l(i,2,j)=aimd_l(i,2,j) - ANINT(dfix(2,j))
+               aimd_l(i,3,j)=aimd_l(i,3,j) - ANINT(dfix(3,j))
+        end do
+    end do
+
+    itemp=celldim(1)*celldim(2)
+    allocate(d_l3(npts(2),3,n_l))
+
+    ! Replication
+    do q = 1,npts(2)
+        i = 1
+        do l = 1, celldim(3)
+        do j =-rep(1), rep(1)
+        do k =-rep(2), rep(2)
+            d_l3(q,1,i:i+itemp-1) = aimd_l(q,1,(l-1)*itemp+1:l*itemp)+j
+            d_l3(q,2,i:i+itemp-1) = aimd_l(q,2,(l-1)*itemp+1:l*itemp)+k
+            d_l3(q,3,i:i+itemp-1) = aimd_l(q,3,(l-1)*itemp+1:l*itemp)
+            i = i+itemp
+        end do
+        end do
+        end do
+        d_l3(q,:,:)= matmul(c_matrix,d_l3(q,:,:))
+    end do
+
+    ! Projectile initialization
+    if (n_p0 > 0) then    ! projectile existence justified
+
+        allocate(d_p3(npts(2),3,n_p))
+        j=1
+        do q = 1,npts(2)
+            j = 1
+            do r =-rep(1), rep(1)
+            do s =-rep(2), rep(2)
+            do l =   1, n_p0
+                d_p3(q,1,j) = aimd_p(q,1,l)+r
+                d_p3(q,2,j) = aimd_p(q,2,l)+s
+                d_p3(q,3,j) = aimd_p(q,3,l)
+                j=j+1
+            end do
+            end do
+            end do
+            d_p3(q,:,:)= matmul(c_matrix,d_p3(q,:,:))
+        end do
+
+    end if
+    ea_fraction(2) = npts(2)/fracaimd(2)
+
+end if
+
+
+    !------------------------------------------------------------------------------
+    !                   HOW MUCH AIMD CONTRIBUTION DO WE WANT?
+    !                   ======================================
+    !------------------------------------------------------------------------------
+
+        allocate(x_all(fracaimd(1)+fracaimd(2)+1,3,n_p+n_l))
+        allocate(y_all(fracaimd(1)+fracaimd(2)+1))
+        y_all = 0.0d0
+        x_all = 0.0d0
+
+        x_all(1,:,:) = x_eq(1,:,:)
+        x_all(2:fracaimd(1)+1,:,:) = x_eq(2:npts(1)+1:ea_fraction(1),:,:)
+        x_all(fracaimd(1)+2:,:,1:n_p) = d_p3(1:npts(2):ea_fraction(2),:,:)
+        x_all(fracaimd(1)+2:,:,n_p+1:) = d_l3(1:npts(2):ea_fraction(2),:,:)
+
+        y_all(1)  = y_eq(1)
+        y_all(2:fracaimd(1)+1)  = y_eq(2:npts(1)+1:ea_fraction(1))
+        y_all(fracaimd(1)+2:) = E_dft1(1:npts(2):ea_fraction(2))
+        y_all = y_all - evasp
+
+        if (fracaimd(2) > 0 )&
+            deallocate(d_p3, d_l3, aimd_l, aimd_p, E_dft1, dfix)
+        if (fracaimd(1) > 0 ) deallocate(y_eq, x_eq)
+
+        if (teil%n_atoms > 0) then
+            teil%r(3,:) = 6.0d0
+            np_atoms = n_p
+        end if
+        nl_atoms = n_l
+
+
+end subroutine read_fit
 
 end module md_init
 

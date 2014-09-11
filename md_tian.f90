@@ -19,7 +19,7 @@ implicit none
 
 type(atoms) :: slab, teil   ! hold r, v and f for atoms in the box
 
-integer :: i, j, k, itraj, q, nwrites, ndata
+integer :: i, j, itraj, q, nwrites, ndata
 
 real(8) :: imass_l, imass_p, rtemp, proj_downgone
 real(8), dimension(:,:), allocatable :: output_info
@@ -67,14 +67,14 @@ if (confname == 'poscar') then
             case (0)
                 call emt_e(slab,teil)
             case (1)
-                call  lj_e(slab,teil)
+!                call  lj_e(slab,teil)
         end select
     else
         select case (pes_key)
             case (0)
                 call emt1_e(slab)
             case (1)
-                call  lj1_e(slab)
+!                call  lj1_e(slab)
         end select
     end if
     Eref = Epot
@@ -118,7 +118,7 @@ do itraj = start_tr, ntrajs+start_tr-1
     q_imp       = 0
     eed_prec     = 0.0d0
 
-    if (confname == 'mxt') call traj_init(slab, teil, Eref)
+    if (confname == 'mxt' .or. confname == 'geo') call traj_init(slab, teil, Eref)
 
     if (teil%n_atoms > 0) then
         call particle_init(teil)
@@ -126,7 +126,7 @@ do itraj = start_tr, ntrajs+start_tr-1
             case (0)
                 call emt(slab,teil)
             case (1)
-                call  lj(slab,teil)
+!                call  lj(slab,teil)
         end select
         if (md_algo_p == 3 .or. md_algo_p == 4 ) call ldfa(teil)
         teil%a  = teil%f*imass_p
@@ -137,7 +137,7 @@ do itraj = start_tr, ntrajs+start_tr-1
             case (0)
                 call emt1(slab)
             case (1)
-                call  lj1(slab)
+ !               call  lj1(slab)
         end select
     end if
 
@@ -173,7 +173,7 @@ do itraj = start_tr, ntrajs+start_tr-1
                case (0)
                    call emt(slab,teil)
                case (1)
-                   call  lj(slab,teil)
+!                   call  lj(slab,teil)
            end select
            eed = teil%dens                                 ! keep eed values
            call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
@@ -182,7 +182,7 @@ do itraj = start_tr, ntrajs+start_tr-1
                 case (0)
                     call emt1(slab)
                 case (1)
-                    call  lj1(slab)
+!                    call  lj1(slab)
             end select
         end if
 

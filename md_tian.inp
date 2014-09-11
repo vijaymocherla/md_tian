@@ -1,8 +1,15 @@
 start 1
 ntrajs 1
+Tsurf 0
 step 0.1
-nsteps 20000
-Tsurf 300
-wstep 3 100
-lattice   Au 196.96657 7 emt475_Au.nml ver -1
-conf mxt "/home/MPG-BPC/akandra/git/md_tian/conf0" 1
+nsteps 20001
+wstep  20000 1
+Einc 2.72
+inclination 20
+azimuth 60
+pprojectile H 1.0079 7 'emt515_H.nml' ver  1
+lattice   Au 196.96657 7 emt515_Au.nml lan -1
+pes emt
+celldim 22 2 4 atlayer 46 44 44 44
+rep 0 1
+conf POSCAR au111_22x2x4.POSCAR

@@ -68,7 +68,7 @@ C**********************************************************************
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
       COMMON/DJA1/LJ
-      DIMENSION Y(1000),X(1000,3,1000),RES(1000)
+      DIMENSION Y(5000),X(5000,3,1000),RES(5000)
       DIMENSIONBB(20),IBB(20)
       DIMENSIONNARRAY(8),ARRAY(8)
       DIMENSION CONST(8),SCONST(8)
@@ -366,7 +366,7 @@ C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
-      DIMENSION Y(1000),X(1000,3,1000),RES(1000)
+      DIMENSION Y(5000),X(5000,3,1000),RES(5000)
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       COMMON/BLK2/A(40,20),SA(20),K2,IK,NPMAX
       COMMON/BLK3/BS(20),DB(20),G(20),K3
@@ -379,7 +379,7 @@ C**********************************************************************
  1    A(J,I)=0.
       DO 50 II=1,N
 C     LOOK FOR PARTIALS
-      !J=2
+      !J=2 analytic derivatives
       J=2
       CALL MODEL(F,Y,X,RES,II,J)
       RD=RE
@@ -668,7 +668,7 @@ C**********************************************************************
       COMMON/BLK3/BS(20),DB(20),G(20),K3
       COMMON/BLK4/AL,DELTA,E,FF,GAMCR,T,TAU,ZETA,PHI,SE,PHICR
       COMMON/BLK5/IB(20),IP
-      DIMENSION Y(1000),X(1000,3,1000),RES(1000)
+      DIMENSION Y(5000),X(5000,3,1000),RES(5000)
       LOGICAL NOLO
       DO580J=1,K
       NOLO=.FALSE.
@@ -755,7 +755,7 @@ C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
       IMPLICIT REAL(8) (A-H,O-Z)
 
-      DIMENSION Y(1000),X(1000,3,1000),RES(1000)
+      DIMENSION Y(5000),X(5000,3,1000),RES(5000)
       COMMON/BLK1/B(20),P(20),RE,N,M,K
       PHI=0.
       DO 10 I=1,N

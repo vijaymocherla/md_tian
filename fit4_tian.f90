@@ -6,6 +6,7 @@ module fit4_tian
     use force
     use open_file
     use atom_class
+    use useful_things
     implicit none
     save
 
@@ -27,7 +28,7 @@ integer, dimension(20) :: IB
 integer :: ip
 ! At entry, B's are initial guesses for parameters
 ! On exit, B's are the results of the fit.
-real(8) :: X(1000,3,1000),Y(1000),RRR(1000)
+real(8) :: X(5000,3,1000),Y(5000),RRR(5000)
 integer, dimension(8) :: NARRAY ! Integer array of control parameters
 real(8), dimension(8) :: ARRAY = 0.0 ! Array of statistical parameters. Use 0.0 to get default values.
 
@@ -36,7 +37,7 @@ character(20) :: TITLE ! string of 20 characters used for title on printout
 
 ! Variables, non nllsq-related
 integer :: itemp3(3), natoms,q
-real(8) :: sumsq, ncells, Eref, se
+real(8) :: sumsq, ncells, Eref, se,pdens
 
 character(len=100) teil_nml_out, slab_nml_out
 
@@ -54,48 +55,68 @@ Y(1:npts) = y_all
 teil_nml_out  = trim(fit_dir)//'emt'//trim(fitnum)//'_'//trim(name_p)//'.nml'
 slab_nml_out  = trim(fit_dir)//'emt'//trim(fitnum)//'_'//trim(name_l)//'.nml'
 
+
 !------------------------------------------------------------------------------------------------------------------
 ! CHECK EMT POTENTIAL SUBROUTINE AND WRITE RESULTS
 !------------------------------------------------------------------------------------------------------------------
 
-if (npts > 0) then
+if (npts > 0 ) then
+    if (confname == 'fit') then
 
-    write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
-    write(*,*) 'site X Y Z EMT DFT'
-!    Write(10,*) 'site X Y Z EMT DFT'
-    sumsq = 0
+        write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
+        write(*,*) 'site X Y Z EMT DFT'
+        sumsq = 0
 
-    slab%r = x_all(1,:,teil%n_atoms+1:natoms)
-    if (teil%n_atoms > 0) then
-        teil%r = x_all(1,:,1:teil%n_atoms)
-        call emt_e(slab,teil)
-    else
-        call emt1_e(slab)
-    end if
-    Eref = Epot
-
-    do q=2,npts
-        slab%r = x_all(q,:,teil%n_atoms+1:natoms)
+        slab%r = x_all(1,:,teil%n_atoms+1:natoms)
         if (teil%n_atoms > 0) then
-            teil%r = x_all(q,:,1:teil%n_atoms)
+            teil%r = x_all(1,:,1:teil%n_atoms)
             call emt_e(slab,teil)
         else
             call emt1_e(slab)
         end if
+        Eref = Epot
 
-        if(q<11) write( *,'(1X, 5F15.8)') X(q,1,1), X(q,2,1), X(q,3,1), (Epot-Eref)*ncells, Y(q)
-!        write(10,'(1X, 5F15.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1)), Y(q)
-!        write(7, '(1X, 4F16.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1))
+        do q=2,npts
+            slab%r = x_all(q,:,teil%n_atoms+1:natoms)
+            if (teil%n_atoms > 0) then
+                teil%r = x_all(q,:,1:teil%n_atoms)
+                call emt_e(slab,teil)
+            else
+                call emt1_e(slab)
+            end if
 
-        sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
-    end do
-    write(*,*)
-!    write(10,*)
-    write(*,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', Eref
-!    write(10,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
-!    write(*,*)
-!    write(10,*)
+            if(q<11) write( *,'(1X, 5F15.8)') X(q,1,1), X(q,2,1), X(q,3,1), (Epot-Eref)*ncells, Y(q)
+    !        write(10,'(1X, 5F15.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1)), Y(q)
+    !        write(7, '(1X, 4F16.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1))
 
+            sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
+        end do
+        write(*,*)
+    !    write(10,*)
+        write(*,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', Eref
+    !    write(10,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
+    !    write(*,*)
+    !    write(10,*)
+
+! Density Fit
+    elseif (confname == 'dens') then
+
+        write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
+        write(*,*) 'site X Y Z EMT DFT'
+        sumsq = 0
+
+        do q=1,npts
+            call emt_dens_fit(x_all(q,:,:),Epot,pdens)
+
+            if(q<11) write( *,'(1X, 5F15.8)') X(q,1,1), X(q,2,1), X(q,3,1), pdens, Y(q)
+
+            sumsq=sumsq+(pdens-Y(q))**2
+
+        end do
+        write(*,*) 'rms error using starting parameters =',sqrt(sumsq/npts)
+
+
+    end if
 end if
 
 ! Here, the fitting procedure starts. So, for debugging, you might want to comment in the 'stop' .
@@ -106,6 +127,18 @@ end if
 ! Usage: CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
 
 !------------------ SET UP B-----------------
+!
+! The paramters are defined as follows:
+!
+!           teil    slab
+! eta2      1       8
+! n0        2       9
+! E0        3       10
+! lambda    4       11
+! V0        5       12
+! kappa     6       13
+! s0        7       14
+!
 B(1:7)  = pars_p
 B(8:14) = pars_l
 
@@ -131,7 +164,6 @@ ARRAY(6) = 2.0d0 ! T 2.
 ARRAY(7) = 0.001d0 ! TAU .001
 ARRAY(8) = 1d-31 ! ZETA - CRITERION FOR 1E-31
                     ! SINGULAR MATRIX
-!array = 0.0
 
 TITLE = 'EMT_fit'
 
@@ -157,12 +189,22 @@ se=0.0d0
 call emt_e_fit(x_all(1,:,:nl_atoms+np_atoms), Eref)
 call dev2eqdft(Eref)
 call dev2aimddft(Eref)
+call denseqdft(Eref)
 
-do q=2,npts
-        call emt_e_fit(x_all(q,:,:nl_atoms+np_atoms), Epot)
-        sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
-        se = se+Sqrt(((Epot-Eref)*ncells-Y(q))**2)
-end do
+if (confname == 'fit') then
+    do q=2,npts
+            call emt_e_fit(x_all(q,:,:nl_atoms+np_atoms), Epot)
+            sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
+            se = se+Sqrt(((Epot-Eref)*ncells-Y(q))**2)
+    end do
+elseif (confname == 'dens') then
+    do q=2,npts
+            call emt_dens_fit(x_all(q,:,:nl_atoms+np_atoms), Epot,pdens)
+            sumsq=sumsq+(pdens-Y(q))**2
+            se = se+Sqrt((pdens-Y(q))**2)
+    end do
+
+end if
 sumsq=sqrt(sumsq/npts)*1000
 se=(se/npts)*1000
 print *, 'rms =',  sumsq, 'meV'
@@ -182,7 +224,7 @@ subroutine dev2eqdft(Eref)
     real(8), dimension(:,:,:), allocatable :: array
     real(8) :: energy, Eref
 
-    call open_for_read(69,trim(fit_dir)//'/Eq_points_dft.dat')
+    call open_for_read(69,trim(fit_dir)//'Eq_points_dft.dat')
     npts=1500
     allocate(fix_p(npts,3))
     do j = 1,npts
@@ -210,6 +252,49 @@ subroutine dev2eqdft(Eref)
 
 end subroutine dev2eqdft
 
+subroutine denseqdft(Eref)
+    !
+    ! Purpose:
+    !           Calculate points at equilibrium positions for all 10 sites.
+    !           For comparison of new fit with input DFT-equilibirum points.
+    !
+
+    integer :: npts, j
+    real(8), dimension(:,:),   allocatable :: fix_p
+    real(8), dimension(:,:,:), allocatable :: array
+    real(8) :: energy, Eref
+    real(8) :: pdens
+
+    call open_for_read(69,trim(fit_dir)//'/Eq_points_dft.dat')
+    npts=1500
+    allocate(fix_p(npts,3))
+    do j = 1,npts
+        read(69,*) fix_p(j,:)
+    end do
+    close(69)
+
+    allocate(array(npts,3,np_atoms+nl_atoms))
+    do j = 1,npts
+        array(j,1,:np_atoms) = x_all(1,1,:np_atoms) + fix_p(j,1)
+        array(j,2,:np_atoms) = x_all(1,2,:np_atoms) + fix_p(j,2)
+        array(j,3,:np_atoms) = fix_p(j,3)
+        array(j,:,np_atoms+1:) = x_all(1,:,np_atoms+1:)
+    end do
+
+    call open_for_write(17,trim(fit_dir)//'densEqdft'//trim(fitnum)//'.dat')
+    do j=1,1500
+        call emt_dens_fit(array(j,:,:nl_atoms+np_atoms), energy,pdens)
+        write(17,'(I4, 3f15.5, f20.7)') (j+150-1)/150, array(j,1,5), array(j,2,5),&
+                                 array(j,3,5), pdens
+    !deallocate(pdens)
+    end do
+    close(17)
+
+    deallocate(array, fix_p)
+
+end subroutine denseqdft
+
+
 subroutine dev2aimddft(Eref)
     !
     ! Purpose:
@@ -226,11 +311,11 @@ subroutine dev2aimddft(Eref)
     real(8), dimension(:), allocatable :: E_dft1
     character(len=3), dimension(13) :: names
 
-    write(str,'(2I1)') rep
+    write(str,'(2I1)') rep(1)
     nr=trim(fit_dir)//'traj'//trim(fitnum)//'_'//str
     call open_for_append(1,trim(nr)//'.dat')
     names = (/'005','010','801','814','817','818','820','821','825','831','832'&
-             ,'833','825'/)
+             ,'833','858'/)
 
     do i = 1, 13
         print*, 'Calculating traj', names(i)
@@ -359,6 +444,59 @@ subroutine readinaimd(pos_l_p,energy_l_p, d_l3, d_p3, npts, E_dft1)
 
 
 end subroutine readinaimd
+
+subroutine restricted_fit(ip, ib)
+    !
+    ! Purpose:
+    !           Restrict fitting parameters to 'save' shear modulus
+    !           Parameters are modified via RANDOM NUMBERS
+    !
+
+    integer                 :: ip
+    integer, dimension(20)  :: ib
+    integer                 :: j
+    real(8) :: thresh, randomnumber, other_randomnumber, third_randomnumber
+
+    ! Create random numbers here.
+    randomnumber = ran1()*3
+    other_randomnumber = ran1()*10
+    third_randomnumber = ran1()
+    !print *, randomnumber, other_randomnumber, third_randomnumber
+
+
+    ! if kappa is too large, lower kappa and increase eta.
+    thresh = beta*pars_l(1)
+    if (pars_l(6) > thresh ) then
+        pars_l(6) = pars_l(6) - randomnumber
+        pars_l(1) = pars_l(1) + other_randomnumber
+    else
+    ! if a parameter is restricted, add random number to this one. In case of kappa, lower it
+    ! if all parameters run, add random number to all of them
+        do j = 1,ip
+        if (ib(j) == 8) then   ! eta
+            pars_l(1) = pars_l(1) + randomnumber
+
+        else if (ib(j) == 12) then  ! vo
+            pars_l(5) = pars_l(5) + randomnumber
+
+        elseif (ib(j) == 13) then  ! kappa
+            pars_l(6) = pars_l(6) - randomnumber
+            if (pars_l(6) > 0.0d0) pars_l(6) = pars_l(6) + other_randomnumber
+
+        else
+            pars_l(1) = pars_l(1) + randomnumber
+            pars_l(5) = pars_l(5) + other_randomnumber
+            pars_l(6) = pars_l(6) + third_randomnumber
+        end if
+        end do
+    end if
+
+    ! a) if certain parameter restricted, add random number to this one (vo, eta), lower kappa
+    ! b) if all parameters are running, add random number to all of them. If difficulties here, make sure
+    !    that kappa is lower than the other values
+    ! c) If (kappa > beta*eta), lower kappa, increase eta, both with random numbers.
+
+end subroutine restricted_fit
 
 
 end module fit4_tian
