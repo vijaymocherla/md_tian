@@ -21,7 +21,7 @@ type(atoms) :: slab, teil   ! hold r, v and f for atoms in the box
 
 integer :: i, j, itraj, q, nwrites, ndata
 
-real(8) :: imass_l, imass_p, rtemp, proj_downgone
+real(8) :: imass_l, imass_p, rtemp, proj_downgone,s
 real(8), dimension(:,:), allocatable :: output_info
 real(8), dimension(:,:), allocatable :: rmin_p              ! lowest particle position
 real(8), dimension(:,:,:), allocatable :: rbounce           ! lowest particle position
@@ -84,6 +84,7 @@ if (confname == 'fit') then
     call fit(slab,teil)
     stop
 end if
+
 
 !------------------------------------------------------------------------------
 !
@@ -162,7 +163,6 @@ do itraj = start_tr, ntrajs+start_tr-1
 !------------------------------------------------------------------------------
     do q = 1, nsteps
 
-
 !----------------------- PROPAGATION ROUTINE ----------------------------------
 
         call propagator_1(slab, md_algo_l, imass_l)         ! slab kick-drift
@@ -240,10 +240,10 @@ do itraj = start_tr, ntrajs+start_tr-1
                     output_info(5+4*j:4+7*j,nwrites) = reshape(teil%v,(/3*j/))
                     ndata = ndata + 1
 
-                case(2)
+                case(-2)
                     call out_all(slab, teil,itraj,Eref)
 
-                case(3)
+                case(-3)
                     call out_all(slab, teil,itraj,Eref)
 
                 case default ! full configuration of system

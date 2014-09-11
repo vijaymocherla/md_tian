@@ -156,8 +156,13 @@ subroutine out_detail(output_info, n, itraj,Eref)
     write(753,'(1000A15)') 'time(fs)', 'E_pot(eV)', 'E_kin_l(eV)','E_kin_p(eV)',&
                            'E_total(eV)', 'dens(A^-3)', 'r_p(A)', 'v_p(A/fs)'
 
-    do i = 1, n
-        write(753,'(10000e15.5)') i*wstep(2)*step, output_info(:,i)
+    do i = 1,nsteps !n
+        if (i <= n) then
+            write(753,'(10000e15.5)') i*wstep(2)*step, output_info(:,i)
+        else
+            write(753,'(10000e15.5)') i*wstep(2)*step, output_info(:,n)
+        end if
+
     end do
     write(753,'(A15,e15.5)') 'E_ref (eV) = ', Eref
 
@@ -221,8 +226,8 @@ subroutine out_all(slab, teil, itraj, Eref)
 
 
     close(753)
-    !filename = 'gzip '//filename
-    !call system(filename)
+!    filename = 'gzip '//filename
+!    call system(filename)
     save_counter = save_counter+1
 
 end subroutine out_all

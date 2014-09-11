@@ -1,10 +1,11 @@
-start 1
+start 26
 ntrajs 1
-Tsurf 300
-step 1
-nsteps 2000
+step 0.1
+nsteps 10000
 wstep 1 1
-lattice  Au 196.96657 emt 7 emt_stroem_Au.nml lan -1
-celldim 1 1 4
-rep 30 6
-conf POSCAR POSCAR
+Einc 2.8
+inclination 20
+azimuth 60
+projectile H   1.0079  emt 7 emt475_H.nml  lan  1
+conf mxt "/home/sjanke/git/md_tian/conf475_therm" 1000
+pip 0
