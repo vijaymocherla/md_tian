@@ -1,15 +1,11 @@
 start 1
 ntrajs 1
 Tsurf 0
-step 0.1
+step 1
 nsteps 20001
-wstep  20000 1
-Einc 2.72
-inclination 20
-azimuth 60
-pprojectile H 1.0079 7 'emt515_H.nml' ver  1
+wstep -2 20000
 lattice   Au 196.96657 7 emt515_Au.nml lan -1
 pes emt
-celldim 22 2 4 atlayer 46 44 44 44
-rep 0 1
-conf POSCAR au111_22x2x4.POSCAR
+celldim 2 2 5 none
+rep 5 1
+conf POSCAR '/home/sjanke/git/md_tian/F515/layers/au111_2x2x5.POSCAR'

@@ -385,7 +385,6 @@ if (confname == 'fit') then
     call read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
                     de_aimd_max, start_l, c_matrix)
 end if
-
 ! Create a directory for configuration data
 inquire(directory='conf',exist=exists)
 if (.not. exists) then
@@ -606,11 +605,11 @@ do i = 1, nat
 l = 1
 do j = i+1, nat
     ! Calculate r with periodic boundary conditions
-    call pbc_dist( rpos(:,i), rpos(:,j), cell_mat, cell_imat, r)
+!    call pbc_dist( rpos(:,i), rpos(:,j), cell_mat, cell_imat, r)
     ! Select those which are within cut off
     if (r <= rcut) then
-        neigh(i,l) = j
-        neigh(j,nneighs(1)-l) = j
+!        neigh(i,l) = j
+!        neigh(j,nneighs(1)-l) = j
         l = l+1
     end if
     k = k+1
@@ -761,20 +760,24 @@ integer :: nlnofix, nlno
 real(8), dimension(:,:), allocatable :: pos_l, d_l, start_l, vel_l
 real(8), dimension(3,3) :: c_matrix
 real(8) :: v_pdof
-
 ! calculate new cellsize
 ! why can't we just take n_l0? We should already have the number of slab atoms.
-if (allocated(nr_at_layer) .eqv. .true. .and. rep(1) > 0 .or. rep(2) > 0) then
-    itemp = 0
-    do i = 1,celldim(3)
-        itemp = itemp + nr_at_layer(i)
-    end do
-    n_l = itemp * (2*rep(1)+1)*(2*rep(2)+1)
-else if (allocated(nr_at_layer) .eqv. .false. &
-        .and. rep(1) > 0 .and. rep(2) > 0) then
-    itemp=celldim(1)*celldim(2)
-    n_l=itemp*celldim(3)*(2*rep(1)+1)*(2*rep(2)+1)
-else
+if (allocated(nr_at_layer) .eqv. .true.) then
+    if (rep(1) > 0 .or. rep(2) > 0 ) then
+        itemp = 0
+        do i = 1,celldim(3)
+            itemp = itemp + nr_at_layer(i)
+        end do
+        n_l = itemp * (2*rep(1)+1)*(2*rep(2)+1)
+    end if
+else if (allocated(nr_at_layer) .eqv. .false. ) then
+    if (rep(1) > 0 .or. rep(2) > 0 ) then
+        itemp=celldim(1)*celldim(2)
+        n_l=itemp*celldim(3)*(2*rep(1)+1)*(2*rep(2)+1)
+    end if
+end if
+! Check if Repetition necessary at all
+if (rep(1) == 0 .and. rep(2) == 0 ) then
     n_l = n_l0
 end if
 
@@ -783,7 +786,8 @@ d_l = 0.0d0
 ! Replication. Every layer is repeated uniquely.
 i = 1
 itemp = 0
-if (allocated(nr_at_layer) .eqv. .true. .and. rep(1) > 0 .or. rep(2) > 0) then
+if (rep(1) > 0 .or. rep(2) > 0 ) then
+if (allocated(nr_at_layer) .eqv. .true.) then
     itemp2 = 1
     do l = 1, celldim(3)
         do j = -rep(1), rep(1)
@@ -797,8 +801,7 @@ if (allocated(nr_at_layer) .eqv. .true. .and. rep(1) > 0 .or. rep(2) > 0) then
         end do
         itemp2 = itemp2+nr_at_layer(l)
     end do
-else if (allocated(nr_at_layer) .eqv. .false. &
-        .and. rep(1) > 0 .and. rep(2) > 0) then
+else if (allocated(nr_at_layer) .eqv. .false.) then
 
     itemp=celldim(1)*celldim(2)
     i = 1
@@ -812,6 +815,7 @@ else if (allocated(nr_at_layer) .eqv. .false. &
             end do
         end do
     end do
+end if
 else
     d_l = start_l
 end if

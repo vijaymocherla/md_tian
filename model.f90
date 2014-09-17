@@ -10,14 +10,14 @@ subroutine model( F, YDAT, XDAT, RRR, I, JP)
     integer             :: I, JP,ij!, rs
 
     real(8)             :: B, P, RES
-    integer             :: IP,IB, rs
+    integer             :: IP,IB
     integer             :: N, M, KK
 
     integer             :: iteration
-    real(8)             :: energy,  E_dref, dE,pdens
+    real(8)             :: energy!,  E_dref, dE,pdens
     real(8), dimension(14):: denergy
     real(8), dimension(14) ::dEref
-    real(8)                 :: ncells, Eref, delta, rtemp
+    real(8)                 :: ncells, Eref!, delta!, rtemp
 
 
     COMMON /BLK1/ B(20),P(20),RES,N,M,KK

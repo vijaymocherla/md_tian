@@ -21,7 +21,7 @@ type(atoms) :: slab, teil   ! hold r, v and f for atoms in the box
 
 integer :: i, j, itraj, q, nwrites, ndata
 
-real(8) :: imass_l, imass_p, rtemp, proj_downgone,s
+real(8) :: imass_l, imass_p, rtemp, proj_downgone
 real(8), dimension(:,:), allocatable :: output_info
 real(8), dimension(:,:), allocatable :: rmin_p              ! lowest particle position
 real(8), dimension(:,:,:), allocatable :: rbounce           ! lowest particle position
@@ -78,13 +78,17 @@ if (confname == 'poscar') then
         end select
     end if
     Eref = Epot
+!    print *, Eref!-91.0279327759785
+!    call open_for_write(14,'trial.dat')
+!    write(14,'(3f15.7)') slab%r
+!    print *, slab%n_atoms
+!    stop
 end if
 
 if (confname == 'fit') then
     call fit(slab,teil)
     stop
 end if
-
 
 !------------------------------------------------------------------------------
 !
@@ -162,6 +166,7 @@ do itraj = start_tr, ntrajs+start_tr-1
 !
 !------------------------------------------------------------------------------
     do q = 1, nsteps
+
 
 !----------------------- PROPAGATION ROUTINE ----------------------------------
 

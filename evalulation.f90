@@ -48,9 +48,9 @@ program output_analysis
     !read(*,*) a_lat
     a_lat=4.201
     write(*,*) 'Please enter the directory name.'
-    file_read_in = 'non_ad_pstroem_ver_6x6x4_T300_2.8_20_60'
+    !file_read_in = 'non_ad_pstroem_ver_6x6x4_T300_2.8_20_60'
     !name1 = 'pstroem_ver_6x6x4_T300_2.8_45_90'
-    !read(*,*) file_read_in
+    read(*,*) file_read_in
     write(*,*) 'Please enter name of unzip directory'
     !read(*,*) name1
     write(*,*) 'Please enter the number of finished trajectories'
