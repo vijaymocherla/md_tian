@@ -1,11 +1,12 @@
 start 1
-ntrajs 1
 Tsurf 0
+ntrajs 100
 step 1
-nsteps 20001
-wstep -2 20000
+nsteps 100000
+wstep 0 1
 lattice   Au 196.96657 7 emt515_Au.nml lan -1
 pes emt
-celldim 2 2 5 none
-rep 5 1
-conf POSCAR '/home/sjanke/git/md_tian/F515/layers/au111_2x2x5.POSCAR'
+celldim 2 2 6 none
+rep 1 1
+conf POSCAR '/home/sjanke/git/md_tian/F515/slab/au111_2x2x6.POSCAR'
+anneal 1000 5000

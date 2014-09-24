@@ -227,6 +227,40 @@ subroutine out_all(slab, teil, itraj, Eref)
 
 end subroutine out_all
 
+subroutine out_poscar(slab,teil,Epot, Eref, itraj)
+        !
+    ! Purpose :
+    !           Prints out poscar-file for final state
+    !
+
+    type(atoms) :: slab, teil
+    real(8) :: Epot, Ekin_l, Ekin_p, Eref
+    integer :: itraj, i
+    character(len=8) str
+    character(len=90) filename
+
+    write(str,'(I8.8)') itraj
+    filename = 'traj/mxt_anneal'//str//'.POSCAR'
+    call open_for_write(753,filename)
+
+    Ekin_l = E_kin(slab,mass_l)
+    Ekin_p = E_kin(teil,mass_p)
+    write(753,'(5(A6,f10.5),A5)') 'Ek_p=', Ekin_p, 'Ek_l=', Ekin_l, &
+    'Epot=', Epot, 'Eref=', Eref, 'Etot=', Epot + Ekin_l + Ekin_p, '(eV)'
+    write(753,*) 1.0
+    write(753,'(3f18.8)') cell_mat
+    if(teil%n_atoms>0) then
+        write(753,*) slab%n_atoms,teil%n_atoms
+    else
+        write(753,*) slab%n_atoms
+    end if
+    write(753,*) 'Cartesian'
+    write(753,'(3f18.8)') slab%r
+    if(teil%n_atoms>0) write(753,'(3f18.8)') teil%r
+
+    close(753)
+end subroutine out_poscar
+
 function sartre(itraj)
     !
     ! Purpose:

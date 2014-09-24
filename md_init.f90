@@ -43,7 +43,7 @@ module md_init
                                     ! (1) = -1 specifies initial and end conditions. mxt_fin.
                                     !        0 in wstep(2) intervals, information on traj. mxt_trj
                                     !        1 all the information in wstep(2) steps, binary file
-                                    !        2 Sames a 1, only into non-binary file. Takes a lot of space.
+                                    !        -2 Sames a 1, only into non-binary file. Takes a lot of space.
                                     !           Reconsider
     real(8) :: height = 6.0d0       ! Read-in height projectile
     real(8) :: Epot = 0.0d0
@@ -88,6 +88,10 @@ module md_init
     integer, dimension(3) :: celldim=(/2,2,4/)  ! input cell structure
     character(len=4) :: fitnum      ! number of fit
 
+    ! Annealing
+    real(8) :: Tmin, Tmax
+    integer :: sasteps = 0
+
 contains
 
 subroutine simbox_init(slab, teil)
@@ -103,7 +107,7 @@ subroutine simbox_init(slab, teil)
     type(atoms), intent(out) :: slab, teil   ! hold r, v and f for atoms in the box
 
     character(len=80) :: pos_init_file
-    character(len=80) :: buffer, biffer, label, mdpa_name_p,mdpa_name_l
+    character(len=100) :: buffer, biffer, label, mdpa_name_p,mdpa_name_l
     character(len=7) :: celln
 !    character(len= 1) :: coord_sys
 
@@ -348,7 +352,8 @@ call random_seed(size=randk)
                 read(buffer, *, iostat=ios) ipc, (ibt(i), i=1,ipc)
             case ('maxit')
                 read(buffer, *, iostat=ios) max_iterations
-
+            case('anneal')
+                read(buffer, *, iostat=ios) Tmax, sasteps
             case default
                 print *, 'Skipping invalid label at line', line, label
             end select
@@ -385,6 +390,12 @@ if (confname == 'fit') then
     call read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
                     de_aimd_max, start_l, c_matrix)
 end if
+
+if (sasteps > 0) then
+    Tmin = Tsurf
+end if
+
+
 ! Create a directory for configuration data
 inquire(directory='conf',exist=exists)
 if (.not. exists) then

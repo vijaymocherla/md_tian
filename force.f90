@@ -921,7 +921,7 @@ subroutine emt1_e(s)
     integer :: i,j
 
     real(8) :: betas0_l, betaeta2_l, kappadbeta_l
-    real(8) :: r, rcut, rr, acut, theta, rtemp, rtemp1
+    real(8) :: r, rcut, rr, acut, theta, rtemp, rtemp1, temp
     real(8) :: igamma1l, igamma2l
     real(8) :: V_ll, Ecoh_l, vref_l
 
@@ -980,6 +980,7 @@ subroutine emt1_e(s)
     vref_l      = 0.0d0
 
     do i = 1, s%n_atoms
+        temp = V_ll
         do j = i+1, s%n_atoms
 
             ! Applying PBCs
@@ -995,7 +996,6 @@ subroutine emt1_e(s)
 
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
-
             r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
@@ -1012,7 +1012,7 @@ subroutine emt1_e(s)
 
         end do
     end do
-
+            close(124)
     ! divide by cut-off scaling factors
     sigma_ll = sigma_ll*igamma1l
     V_ll     =     V_ll*igamma2l*pars_l(5)
@@ -1020,6 +1020,7 @@ subroutine emt1_e(s)
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 
     s_l = -log(sigma_ll*twelfth)/betaeta2_l
+
 
 !----------------------EMBEDDED ELECTRON DENSITY-------------------------------
 
@@ -1038,7 +1039,6 @@ subroutine emt1_e(s)
 !-------------------------------TOTAL ENERGY---------------------------------
 
     Epot = Ecoh_l - V_ll + 0.50d0*vref_l
-
 
     deallocate(s_l, sigma_ll)
 

@@ -123,38 +123,42 @@ do itraj = start_tr, ntrajs+start_tr-1
     q_imp       = 0
     eed_prec     = 0.0d0
 
-    if (confname == 'mxt' .or. confname == 'geo') call traj_init(slab, teil, Eref)
+    if ((sasteps == 0) .or. (sasteps > 0) .and. (itraj ==1)) then
 
-    if (teil%n_atoms > 0) then
-        call particle_init(teil)
-        select case (pes_key)
-            case (0)
-                call emt(slab,teil)
-            case (1)
-!                call  lj(slab,teil)
-        end select
-        if (md_algo_p == 3 .or. md_algo_p == 4 ) call ldfa(teil)
-        teil%a  = teil%f*imass_p
-        teil%ao = teil%a
-        teil%au = teil%ao
-    else
-        select case (pes_key)
-            case (0)
-                call emt1(slab)
-            case (1)
- !               call  lj1(slab)
-        end select
-    end if
+        if (confname == 'mxt' .or. confname == 'geo') &
+            call traj_init(slab, teil, Eref)
 
-    if (md_algo_l == 3 .or. md_algo_l == 4 ) call ldfa(slab)
-    slab%a  = slab%f*imass_l
-    slab%ao = slab%a
-    slab%au = slab%ao
+        if (teil%n_atoms > 0) then
+            call particle_init(teil)
+            select case (pes_key)
+                case (0)
+                    call emt(slab,teil)
+                case (1)
+    !                call  lj(slab,teil)
+            end select
+            if (md_algo_p == 3 .or. md_algo_p == 4 ) call ldfa(teil)
+            teil%a  = teil%f*imass_p
+            teil%ao = teil%a
+            teil%au = teil%ao
+        else
+            select case (pes_key)
+                case (0)
+                    call emt1(slab)
+                case (1)
+     !               call  lj1(slab)
+            end select
+        end if
 
-    ! save initial state
-    if (wstep(1)==-1) call out_short(slab, teil, Epot, Eref, &
-                                     itraj, 0, rmin_p, col_end, imp, rbounce)
-    tock = teil%v
+        if (md_algo_l == 3 .or. md_algo_l == 4 ) call ldfa(slab)
+        slab%a  = slab%f*imass_l
+        slab%ao = slab%a
+        slab%au = slab%ao
+
+        ! save initial state
+        if (wstep(1)==-1) call out_short(slab, teil, Epot, Eref, &
+                                         itraj, 0, rmin_p, col_end, imp, rbounce)
+        tock = teil%v
+    endif
 
     !print *, 'ntraj', itraj
     !timing
@@ -166,6 +170,12 @@ do itraj = start_tr, ntrajs+start_tr-1
 !
 !------------------------------------------------------------------------------
     do q = 1, nsteps
+
+!---------------Simulated Annealing ROUTINE ----------------------------------
+        if (mod(q,sasteps) == 1) then
+            Tsurf = Tmax - (Tmax-Tmin) * abs(2.0d0*(q + sasteps - 1)/nsteps - 1.0d0)
+        endif
+!print *, q, Tsurf
 
 
 !----------------------- PROPAGATION ROUTINE ----------------------------------
@@ -248,9 +258,6 @@ do itraj = start_tr, ntrajs+start_tr-1
                 case(-2)
                     call out_all(slab, teil,itraj,Eref)
 
-                case(-3)
-                    call out_all(slab, teil,itraj,Eref)
-
                 case default ! full configuration of system
                     if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)
 
@@ -269,15 +276,18 @@ do itraj = start_tr, ntrajs+start_tr-1
             end if
         end do
         if (exit_key) exit
+
     end do ! steps
 
     col_end = col_end - col_start
     ! final state
-    call full_conf(slab, teil,itraj,Eref)
+    if (sasteps < 1) call full_conf(slab, teil,itraj,Eref)
 
     if (wstep(1)==-1) call out_short (slab, teil, Epot, Eref, itraj, q, rmin_p, &
                                       col_end, imp, rbounce)
     if (wstep(1)== 0) call out_detail(output_info, ndata, itraj, Eref)
+
+    if (wstep(1)==-3) call out_poscar(slab,teil,Epot, Eref, itraj)
 !    if (wstep(1)== 0) then
 !        call open_for_write(797,'/home/sjanke/git/md_tian/config.dat')
 !        write(797,*) slab%r
