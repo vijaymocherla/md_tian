@@ -37,7 +37,6 @@ subroutine propagator_1(s, md_algo, imass)
             call beeman_1(s)
 
         case (3) ! Langevin
-
             call langevin_1(s,imass)
 
         case (4) ! Langevin up to 2nd order

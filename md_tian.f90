@@ -5,8 +5,8 @@ program md_tian
     ! Date          	Author          	History of Revison
     ! ====          	======          	==================
     ! 18.02.2014    	Svenja M. Janke		Original
-    !			Sascha Kandratsenka
-    !			Dan J. Auerbach
+    !			        Sascha Kandratsenka
+    !			        Dan J. Auerbach
     !
 use atom_class
 use md_init
@@ -78,9 +78,11 @@ if (confname == 'poscar') then
         end select
     end if
     Eref = Epot
-!    print *, Eref!-91.0279327759785
+    print *, Eref
 !    call open_for_write(14,'trial.dat')
-!    write(14,'(3f15.7)') slab%r
+!    write(14,'(3f15.10)') cell_mat
+!    write(14,*) slab%n_atoms
+!    write(14,'(3f15.10)') slab%r
 !    print *, slab%n_atoms
 !    stop
 end if
@@ -123,8 +125,11 @@ do itraj = start_tr, ntrajs+start_tr-1
     q_imp       = 0
     eed_prec     = 0.0d0
 
-    if ((sasteps == 0) .or. (sasteps > 0) .and. (itraj ==1)) then
 
+! Skip initialisation routine for Annealing after 1st trajectory
+    if ((sasteps > 0) .and. (itraj > 1)) then
+
+    else
         if (confname == 'mxt' .or. confname == 'geo') &
             call traj_init(slab, teil, Eref)
 
@@ -171,12 +176,12 @@ do itraj = start_tr, ntrajs+start_tr-1
 !------------------------------------------------------------------------------
     do q = 1, nsteps
 
-!---------------Simulated Annealing ROUTINE ----------------------------------
-        if (mod(q,sasteps) == 1) then
-            Tsurf = Tmax - (Tmax-Tmin) * abs(2.0d0*(q + sasteps - 1)/nsteps - 1.0d0)
-        endif
-!print *, q, Tsurf
+!--------------------- SIMULATED ANNEALING ROUTINE ----------------------------
 
+        if (sasteps > 0 .and. mod(q,sasteps) == 1) then
+            Tsurf = Tmax - (Tmax-Tmin) * abs(2.0d0*(q + sasteps - 1)/nsteps - 1.0d0)
+            if (Tsurf < 0) Tsurf = 0
+        endif
 
 !----------------------- PROPAGATION ROUTINE ----------------------------------
 
@@ -287,7 +292,7 @@ do itraj = start_tr, ntrajs+start_tr-1
                                       col_end, imp, rbounce)
     if (wstep(1)== 0) call out_detail(output_info, ndata, itraj, Eref)
 
-    if (wstep(1)==-3) call out_poscar(slab,teil,Epot, Eref, itraj)
+    if (wstep(1)==-3 .or. wstep(1) == 0) call out_poscar(slab,teil,Epot, Eref, itraj)
 !    if (wstep(1)== 0) then
 !        call open_for_write(797,'/home/sjanke/git/md_tian/config.dat')
 !        write(797,*) slab%r

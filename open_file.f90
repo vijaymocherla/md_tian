@@ -89,7 +89,8 @@ subroutine open_for_append(lun,file_name)
     open(unit=lun, file=file_name, status='new', action='write', iostat=ios, iomsg=error_message)
     if (ios==0) return
 
-    open(unit=lun, file=file_name, status='old', action='write', iostat=ios, iomsg=error_message)
+    open(unit=lun, file=file_name, status='old', access='append', action='write', &
+         iostat=ios, iomsg=error_message)
 
     if (ios==0) return
     print *, 'failed to open file ', file_name, ' for write with status=old. i/o status =',ios

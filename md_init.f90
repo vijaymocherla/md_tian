@@ -72,7 +72,7 @@ module md_init
     real(8), dimension(:), allocatable   :: pars_l, pars_p ! potential parameters
 
 
-    character(len=80) :: confname_file
+    character(len=100) :: confname_file
     character(len= 7) :: confname
     integer :: n_confs = 1          ! Number of configurations to read in
     integer :: conf_nr = 1          ! number in name of configurational file to read in.
@@ -835,14 +835,15 @@ allocate(pos_l(3,n_l), vel_l(3,n_l))
 pos_l = matmul(c_matrix,d_l)
 
 ! Exclude fixed atoms
-if (nlno == -1 .and. allocated(nr_at_layer) == .false.) then
-    nlnofix = n_l/celldim(3)*(celldim(3)-1)    ! lowest layer fixed
-else if (nlno == -1 .and. allocated(nr_at_layer) == .true.) then
+if (nlno < 0 .and. allocated(nr_at_layer) == .false.) then
+    nlnofix = n_l/celldim(3)*(celldim(3)+nlno)    ! lowest layer fixed
+else if (nlno < 0 .and. allocated(nr_at_layer) == .true.) then
     ! calculate number of remaining atoms when lowest layer fixed
-    nlnofix = n_l - nr_at_layer(celldim(3))*(2*rep(1)+1)*(2*rep(2)+1)
+    nlnofix = n_l + nr_at_layer(celldim(3))*(2*rep(1)+1)*(2*rep(2)+1)*nlno
 else
     nlnofix = n_l - nlno                       ! whatever number nlno of atoms fixed
 end if
+
 
 ! Sample velocities of lattice atoms from thermal distribution
 ! assuming the minimum energy configuration
