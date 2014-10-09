@@ -79,12 +79,13 @@ if (confname == 'poscar') then
     end if
     Eref = Epot
     print *, Eref
-!    call open_for_write(14,'trial.dat')
-!    write(14,'(3f15.10)') cell_mat
-!    write(14,*) slab%n_atoms
-!    write(14,'(3f15.10)') slab%r
+    call open_for_write(14,'trial.dat')
+    write(14,'(3f15.10)') cell_mat
+    write(14,*) slab%n_atoms
+    write(14,'(3f15.10)') slab%r
+!    write(14,'(3f15.10)') teil%r
 !    print *, slab%n_atoms
-!    stop
+    stop
 end if
 
 if (confname == 'fit') then

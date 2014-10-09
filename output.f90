@@ -24,6 +24,8 @@ subroutine full_conf(slab, teil, itraj,Eref)
     !
     ! Purpose:
     !           Prints out information necessary to continue simulation
+    !           Results in binary file.
+    !
 
     type(atoms) :: slab, teil
     real(8) :: Eref
@@ -80,6 +82,7 @@ subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbou
     !
     ! Purpose :
     !           Prints out final information at end of trajectory
+    !           Results in mxt_fin-files necessary for traj analysis
     !
 
     type(atoms) :: slab, teil
@@ -140,6 +143,7 @@ subroutine out_detail(output_info, n, itraj,Eref)
     !
     ! Purpose :
     !           Prints out a lot of trajectory information along trajectory
+    !           mxt_trj-files to follow what's happening during trajectory
     !
 
     real(8), dimension(:,:), allocatable :: output_info
@@ -170,65 +174,68 @@ subroutine out_all(slab, teil, itraj, Eref)
     !
     ! Purpose:
     !           Prints out all the geometries along the trajectory.
-    !           Structure is the same as for full_conf, only a dat-file is created.
-    !           Be careful. This option will take up a lot of space.
+    !           saved as .xyz-file
+    !           Be careful. This option will take up a lot of disc-space.
     !
 
     type(atoms) :: slab, teil
     real(8) :: Eref
-    integer :: ios, itraj
+    integer :: ios, itraj,i, n
     character(len=8) str
     character(len=90) filename
+    real(8), allocatable, dimension(:,:) :: xdatx
 
-    write(str,'(I8.8)') save_counter
+write(str,'(I8.8)') itraj
+filename = 'conf/mxt_conf'//str//'.xyz'
 
-    filename = 'conf/mxt_conf'//str//'.dat'
+n=slab%n_atoms+teil%n_atoms
+allocate(xdatx(3,n+1))
+xdatx=0.0d0
+xdatx(1,1:slab%n_atoms)= slab%r(1,:)
+xdatx(2,1:slab%n_atoms)= slab%r(2,:)
+xdatx(3,1:slab%n_atoms)= slab%r(3,:)
+xdatx(1,:slab%n_atoms+1:n)=teil%r(1,:)
+xdatx(2,:slab%n_atoms+1:n)=teil%r(2,:)
+xdatx(3,:slab%n_atoms+1:n)=teil%r(3,:)
 
-    open (753,file=filename, status='replace', &
+! Get all atoms into unit-cell
+xdatx = matmul(cell_imat,xdatx)
+do i = 1, n
+!    if (slab%r(1,i) > 1) slab%r(1,i) = slab%r(1,i) - int(slab%r(1,i))
+!    if (slab%r(2,i) > 1) slab%r(2,i) = slab%r(2,i) - int(slab%r(2,i))
+!    if (slab%r(1,i) < 0.0d0) slab%r(1,i) = slab%r(1,i) - int(slab%r(1,i))+1
+!    if (slab%r(2,i) < 0.0d0) slab%r(2,i) = slab%r(2,i) - int(slab%r(2,i))+1
+    if (xdatx(1,i) > 1.100d0) xdatx(1,i) = xdatx(1,i) - Anint(xdatx(1,i))
+    if (xdatx(2,i) > 1.1d0) xdatx(2,i) = xdatx(2,i) - Anint(xdatx(2,i))
+    if (xdatx(1,i) < -1.1d0) xdatx(1,i) = xdatx(1,i) - Anint(xdatx(1,i))+1
+    if (xdatx(2,i) < -1.1d0) xdatx(2,i) = xdatx(2,i) - Anint(xdatx(2,i))+1
+end do
+xdatx = matmul(cell_mat,xdatx)
+
+!    open (753,file=filename, status='replace', &
+!                    action='write', iostat=ios)
+    if (overwrite) then
+        open (753,file=filename, status='replace', &
                     action='write', iostat=ios)
+    else
+        call open_for_append(753,filename)
+    end if
 
     ! Here comes the output
+    write(753,*) slab%n_atoms+teil%n_atoms
+    write(753,*)
+    do i = 1, slab%n_atoms+teil%n_atoms
+        write(753,*) 'Au  ', xdatx(:,i)
+    end do
 
-    write(753,*) itraj        ! Number of trajectory
-    write(753,*) step         ! time step
-    write(753,*) Epot, Eref
-    write(753,*) Tsurf        ! Surface temperature
-    ! number of species
-    if (teil%n_atoms .ne. 0) then
-        write(753,*) 2
-    else
-        write(753,*) 1
-    end if
-    ! potential and neighbouring
-!    write(753,*) pes_name!, pes_nigh
-    ! name, number of atoms, no of fixed atoms
-    ! masses, number of parameters, file name parameters, paramter values
-    ! propagator
-    write(753,*) name_l, slab%n_atoms, slab%nofix,&
-               mass_l, npars_l,key_l
-    write(753,*) pars_l, md_algo_l
-
-    write(753,*) a_lat        ! lattice constant
-    write(753,*) cell_mat     ! Cell matrix
-    write(753,*) cell_imat    ! inverse cell matrix
-    write(753,*) slab%r, slab%v, slab%a, slab%dens
-    if (teil%n_atoms .ne. 0) then
-        write(753,*) name_p, teil%n_atoms, teil%nofix, &
-                   mass_p, npars_p, key_p
-        write(753,*) pars_p, md_algo_p
-        write(753,*) teil%r, teil%v, teil%a, teil%dens
-    end if
-
-
-    close(753)
-    !filename = 'gzip '//filename
-    !call system(filename)
     save_counter = save_counter+1
-
+    close(753)
+    overwrite = .false.
+deallocate(xdatx)
 end subroutine out_all
 
 subroutine out_poscar(slab,teil,Epot, Eref, itraj)
-        !
+    !
     ! Purpose :
     !           Prints out poscar-file for final state
     !
@@ -302,3 +309,63 @@ function sartre(itraj)
 end function sartre
 
 end module output
+!subroutine out_all(slab, teil, itraj, Eref)
+!    !
+!    ! Purpose:
+!    !           Prints out all the geometries along the trajectory.
+!    !           Structure is the same as for full_conf, only a dat-file is created.
+!    !           Be careful. This option will take up a lot of space.
+!    !
+!
+!    type(atoms) :: slab, teil
+!    real(8) :: Eref
+!    integer :: ios, itraj
+!    character(len=8) str
+!    character(len=90) filename
+!
+!    write(str,'(I8.8)') save_counter
+!
+!    filename = 'conf/mxt_conf'//str//'.dat'
+!
+!    open (753,file=filename, status='replace', &
+!                    action='write', iostat=ios)
+!
+!    ! Here comes the output
+!
+!    write(753,*) itraj        ! Number of trajectory
+!    write(753,*) step         ! time step
+!    write(753,*) Epot, Eref
+!    write(753,*) Tsurf        ! Surface temperature
+!    ! number of species
+!    if (teil%n_atoms .ne. 0) then
+!        write(753,*) 2
+!    else
+!        write(753,*) 1
+!    end if
+!    ! potential and neighbouring
+!!    write(753,*) pes_name!, pes_nigh
+!    ! name, number of atoms, no of fixed atoms
+!    ! masses, number of parameters, file name parameters, paramter values
+!    ! propagator
+!    write(753,*) name_l, slab%n_atoms, slab%nofix,&
+!               mass_l, npars_l,key_l
+!    write(753,*) pars_l, md_algo_l
+!
+!    write(753,*) a_lat        ! lattice constant
+!    write(753,*) cell_mat     ! Cell matrix
+!    write(753,*) cell_imat    ! inverse cell matrix
+!    write(753,*) slab%r, slab%v, slab%a, slab%dens
+!    if (teil%n_atoms .ne. 0) then
+!        write(753,*) name_p, teil%n_atoms, teil%nofix, &
+!                   mass_p, npars_p, key_p
+!        write(753,*) pars_p, md_algo_p
+!        write(753,*) teil%r, teil%v, teil%a, teil%dens
+!    end if
+!
+!
+!    close(753)
+!    !filename = 'gzip '//filename
+!    !call system(filename)
+!    save_counter = save_counter+1
+!
+!end subroutine out_all

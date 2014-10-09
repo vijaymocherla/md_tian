@@ -195,7 +195,7 @@ subroutine langevin_1(s, imass)
     do i = 1, nf
 
         ! Preventing problems due to precision issues
-        if (xidt(i) > 1.0d-2) then                      ! use precise expressions
+        if (xidt(i) > 1.0d-2 .and. Tsurf > 0.0001d0) then                      ! use precise expressions
 
             c0(i) = exp(-xidt(i))
             c1(i) = (1.0d0 - c0(i))*ixidt(i)
@@ -269,7 +269,7 @@ subroutine langevin_2(s, imass)
     do i = 1, nf
 
         ! Preventing problems due to precision issues
-        if (xidt(i) > 1.0d-2) then                      ! use precise expressions
+        if (xidt(i) > 1.0d-2 .and. Tsurf > 0.0001d0) then     ! use precise expressions
 
             c0(i) = exp(-xidt(i))
             c1(i) = (1.0d0 - c0(i))*ixidt(i)
