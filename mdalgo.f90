@@ -41,6 +41,8 @@ subroutine propagator_1(s, md_algo, imass)
 
         case (4) ! Langevin up to 2nd order
             call langevins_1(s,imass)
+        case(5)
+            call verlet_1(s)
 
    end select
 
@@ -88,6 +90,9 @@ subroutine propagator_2(s, md_algo, imass)
                 call ldfa(s)
                 call newton(s, imass)
                 call langevins_2(s,imass)
+            case (5)
+                call newton(s, imass)
+                call verlet_2(s)
 
        end select
 
@@ -154,7 +159,6 @@ subroutine beeman_1(s)
                                                  - s%au(:,1:nf))
 
 end subroutine beeman_1
-
 
 subroutine beeman_2(s)
     !
@@ -312,7 +316,6 @@ subroutine langevin_2(s, imass)
     s%v(3,1:nf) = s%v(3,1:nf) + c2*s%a(3,1:nf) + cofm(3,:)
 
 end subroutine langevin_2
-
 
 subroutine langevins_1(s, imass)
     !

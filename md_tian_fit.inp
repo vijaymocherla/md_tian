@@ -1,5 +1,5 @@
 projectile H 1.0079 7 emt515_H.nml ver 0
-lattice Au 196.96657 7 emt515_Au1.nml ver 0
+lattice Au 196.96657 7 emt515_Au.nml ver 0
 pes emt
 celldim 2 2 4 x
 rep 1 1

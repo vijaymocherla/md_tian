@@ -109,6 +109,7 @@ subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbou
     write(753,'(A14,f15.5)') 'E_kin_p (eV) = ', Ekin_p
     write(753,'(A14,f15.5)') 'E_kin_l (eV) = ', Ekin_l
     write(753,'(A14,f15.5)') 'E_pot   (eV) = ', Epot
+    write(753,'(A14,f15.5)') 'E_pef   (eV) = ', pEfric
     write(753,'(A14,f15.5)') 'E_ref   (eV) = ', Eref
     write(753,'(A14,f15.5)') 'E_total (eV) = ', Epot + Ekin_l + Ekin_p
     write(753,'(A8)')'r_p (A):'

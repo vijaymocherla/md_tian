@@ -1,10 +1,11 @@
 start 1
 ntrajs 1
-Tsurf 300
+Tsurf 45
 step 1
-nsteps 2000
-wstep 1 1
-lattice  Au 196.96657 emt 7 emt_stroem_Au.nml lan -1
-celldim 1 1 4
-rep 30 6
-conf POSCAR POSCAR
+nsteps 20001
+wstep 0 1
+lattice   Au 196.96657 7 emt515_Au.nml ver -1
+pes emt
+celldim 22 2 4 atlayer 46 44 44 44
+rep 0 1
+conf POSCAR rec_au111_22x2x4.POSCAR

@@ -167,7 +167,7 @@ ARRAY(8) = 1d-31 ! ZETA - CRITERION FOR 1E-31
 
 TITLE = 'EMT_fit'
 
-CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
+!CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
 
 pars_l = B(8:14)
 pars_p = B(1:7)
@@ -302,9 +302,9 @@ subroutine dev2aimddft(Eref)
     !           For comparison between input AIMD and new fit.
     !
     real(8), intent(in) :: Eref
-    real(8) :: energy
+    real(8) :: energy,sumsq = 0.0d0,sum1 = 0.0d0,c44= 0.0d0
     character(len=80) :: pos_l_p, energy_l_p
-    integer :: i, q, npts
+    integer :: i, q, npts, col = 0
     character(len=1) :: str
     character(len=80) :: nr
     real(8), dimension(:,:,:), allocatable :: d_l3, d_p3, array
@@ -314,6 +314,7 @@ subroutine dev2aimddft(Eref)
     write(str,'(2I1)') rep(1)
     nr=trim(fit_dir)//'traj'//trim(fitnum)//'_'//str
     call open_for_append(1,trim(nr)//'.dat')
+    call open_for_append(141,'c44rms.dat')
     names = (/'005','010','801','814','817','818','820','821','825','831','832'&
              ,'833','858'/)
 
@@ -333,10 +334,22 @@ subroutine dev2aimddft(Eref)
             call emt_e_fit(array(q,:,:nl_atoms+np_atoms), energy)
             write(1,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
             !write(*,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
+            sumsq = sumsq + (((E_dft1(q)-evasp)-((energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))))**2)
         end do
+        sum1 = sum1 + sumsq
+        col = col + npts
+        sumsq = 0.0d0
         deallocate(array, E_dft1)
     end do
     close(1)
+    sumsq = Sqrt(sum1/col)*1000
+    print*,'aimd_rms = ',sumsq, ' meV'
+    c44 = pars_l(5)*pars_l(6)*(beta*pars_l(1)-pars_l(6))/(8*pi*pars_l(7))*160.2176565
+    print *, 'C44 = ', c44, ' GPa'
+!write(141,'(A6, 16f15.6)') fitnum, c44, sumsq, pars_l(1), pars_l(2), pars_l(3),&
+!             pars_l(4), pars_l(5), pars_l(6), pars_l(7), pars_p(1), pars_p(2), pars_p(3),&
+!             pars_p(4), pars_p(5), pars_p(6), pars_p(7)
+    close(141)
 
 end subroutine dev2aimddft
 

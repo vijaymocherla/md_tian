@@ -29,8 +29,8 @@ real(8), dimension(:,:), allocatable :: tock                ! collection array f
 integer, dimension(:), allocatable   :: col_start, col_end  ! collision time
 integer, dimension(:), allocatable   :: imp, q_imp          ! collision number
 logical :: exit_key, imp_switch
-real(8), dimension(:), allocatable :: eed, eed_prec          ! embedded electron density for projectile
-real(8) :: Eref                                              ! reference energy
+real(8), dimension(:), allocatable :: eed, eed_prec         ! embedded electron density for projectile
+real(8) :: Eref                                             ! reference energy
 
 !timing
 !real(8) :: start, fin
@@ -79,14 +79,34 @@ if (confname == 'poscar') then
     end if
     Eref = Epot
     print *, Eref
-    call open_for_write(14,'trial.dat')
-    write(14,'(3f15.10)') cell_mat
-    write(14,*) slab%n_atoms
-    write(14,'(3f15.10)') slab%r
+!    print *, slab%n_atoms
+!    call open_for_write(14,'trial.dat')
+!    write(14,'(3f15.10)') cell_mat
+!    write(14,*) slab%n_atoms
+!    write(14,'(3f15.10)') slab%r
 !    write(14,'(3f15.10)') teil%r
 !    print *, slab%n_atoms
-    stop
+!    stop
 end if
+
+!!Check how much energy won by H to vacuum
+!teil%r(:,1) = (/0.0d0, 0.0d0, 6.0d0/)
+!!slab%r(:,17) = (/0.0d0, 0.0d0, 6.0d0+ 1.590d0 /)
+!!print *, teil%r
+!!print *, slab%r(:,17)
+!call emt_e(slab,teil)
+!print *, Epot-Eref
+!!print *, 'D E',(Epot-Eref)-0.95569987d0
+!call open_for_append(14,'Au_H_at_6A.dat')
+!!    call open_for_write(14,'trial.dat')
+!!    write(14,'(3f15.10)') slab%r
+!!    write(14,'(3f15.10)') teil%r
+!!write(14,'(A5,7A8,7A8,A8)') 'fit', 'E(H-Au)/eV'
+!write(14,'(A5,15f15.5)') key_l(31:34), Epot-Eref
+!close(14)
+!stop
+
+
 
 if (confname == 'fit') then
     call fit(slab,teil)
@@ -131,6 +151,7 @@ do itraj = start_tr, ntrajs+start_tr-1
     if ((sasteps > 0) .and. (itraj > 1)) then
 
     else
+! Initialising all variables for start of new trajectory
         if (confname == 'mxt' .or. confname == 'geo') &
             call traj_init(slab, teil, Eref)
 
@@ -142,10 +163,13 @@ do itraj = start_tr, ntrajs+start_tr-1
                 case (1)
     !                call  lj(slab,teil)
             end select
-            if (md_algo_p == 3 .or. md_algo_p == 4 ) call ldfa(teil)
+            if (md_algo_p == 3 .or. md_algo_p == 4 &
+                .or. md_algo_p == 5) call ldfa(teil)
             teil%a  = teil%f*imass_p
             teil%ao = teil%a
             teil%au = teil%ao
+            if (md_algo_p == 5) pEfric = pEfric+teil%dens(i)*&
+                                (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)
         else
             select case (pes_key)
                 case (0)
@@ -234,6 +258,13 @@ do itraj = start_tr, ntrajs+start_tr-1
                     q_imp(i) = q
                 end if
                 eed_prec = eed
+                ! Calculate post Electronic friction
+                ! pef = Int(_t0^tend) eta_fric*v^2
+                if (md_algo_p == 5) then
+                    call ldfa(teil)
+                    pEfric = pEfric+teil%dens(i)*&
+                             (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)
+                end if
 
             end do
         end if

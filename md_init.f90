@@ -33,6 +33,7 @@ module md_init
                                     !                           2 - beeman
                                     !                           3 - langevin
                                     !                           4 - langevin (series)
+                                    !                           5 - verlet + post Electronic friction
     integer :: md_algo_p    = 0     !  0 means no projectile
     logical :: Tsurf_key = .false., md_algo_l_key = .false., md_algo_p_key = .false.
     integer :: pip_sign     =-1     ! -1 : read in from configuration file. Default.
@@ -47,6 +48,7 @@ module md_init
                                     !           Reconsider
     real(8) :: height = 6.0d0       ! Read-in height projectile
     real(8) :: Epot = 0.0d0
+    real(8) :: pEfric = 0.0d0       ! electronic friction accumulator for md_algo_p == 5
     real(8) :: a_lat                ! lattice constant
     real(8),dimension(3,3) :: cell_mat, cell_imat ! simulation cell matrix and its inverse
 
@@ -196,6 +198,8 @@ call random_seed(size=randk)
                         md_algo_p = 3
                     case ('sla')
                         md_algo_p = 4
+                    case ( 'pef' )
+                        md_algo_p = 5
                    case default
                         print *, 'algorithm ', trim(mdpa_name_p), ' unknown'
                         stop
@@ -221,8 +225,10 @@ call random_seed(size=randk)
                         md_algo_l = 2
                     case ('lan')
                         md_algo_l = 3
-                     case ('sla')
+                    case ('sla')
                         md_algo_l = 4
+                    case ( 'pef' )
+                        md_algo_l = 5
                    case default
                         print *, 'algorithm ', trim(mdpa_name_l), ' unknown'
                         stop
@@ -681,6 +687,7 @@ cell_imat(3,  3) = d_matrix(3,  3)
 ! Read in coordinates
 allocate(start_l(3,n_l0))
 read(38,*) start_l
+! Read in coordinates of particle if present
 if (n_p > 0) then
     allocate(start_p(3,n_p))
     read(38,*) start_p
