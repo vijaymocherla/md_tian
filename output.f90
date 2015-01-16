@@ -20,7 +20,7 @@ logical :: overwrite = .true.
 
 contains
 
-subroutine full_conf(slab, teil, itraj,Eref)
+subroutine full_conf(slab, teil, itraj,Eref) !mxt_conf.bin
     !
     ! Purpose:
     !           Prints out information necessary to continue simulation
@@ -78,7 +78,7 @@ subroutine full_conf(slab, teil, itraj,Eref)
 
 end subroutine full_conf
 
-subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbounce)
+subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbounce) !mxt_fin.dat
     !
     ! Purpose :
     !           Prints out final information at end of trajectory
@@ -116,6 +116,7 @@ subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbou
     write(753,'(3f15.5)') teil%r
     write(753,'(A11)')'v_p (A/fs):'
     write(753,'(3e15.5)') teil%v
+print *, Ekin_l
 
     if (.not. overwrite) then
         write(753,'(A12)')'r_min_p (A):'
@@ -140,7 +141,7 @@ subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbou
 
 end subroutine out_short
 
-subroutine out_detail(output_info, n, itraj,Eref)
+subroutine out_detail(output_info, n, itraj,Eref) !mxt_trj.dat
     !
     ! Purpose :
     !           Prints out a lot of trajectory information along trajectory
@@ -171,7 +172,7 @@ subroutine out_detail(output_info, n, itraj,Eref)
 
 end subroutine out_detail
 
-subroutine out_all(slab, teil, itraj, Eref)
+subroutine out_all(slab, teil, itraj, Eref) !mxt_conf.xyz
     !
     ! Purpose:
     !           Prints out all the geometries along the trajectory.
@@ -235,7 +236,7 @@ xdatx = matmul(cell_mat,xdatx)
 deallocate(xdatx)
 end subroutine out_all
 
-subroutine out_poscar(slab,teil,Epot, Eref, itraj)
+subroutine out_poscar(slab,teil,Epot, Eref, itraj) !mxt_anneal.POSCAR
     !
     ! Purpose :
     !           Prints out poscar-file for final state
@@ -308,6 +309,61 @@ function sartre(itraj)
     end if
 
 end function sartre
+
+subroutine out_posvel(slab, teil, itraj, Eref)
+    !
+    ! Purpose:
+    !           Prints out all the geometries and velocities along the trajectory.
+    !           Be careful. This option will take up a lot of space.
+    !
+
+    type(atoms) :: slab, teil
+    real(8) :: Eref
+    integer :: ios, itraj
+    character(len=8) str
+    character(len=90) filename
+
+    write(str,'(I8.8)') save_counter
+
+    filename = 'conf/mxt_rv'//str//'.dat'
+
+    open (753,file=filename, status='replace', &
+                    action='write', iostat=ios)
+
+    ! Here comes the output
+    write(753,*) itraj        ! Number of trajectory
+    write(753,*) Epot, Eref
+    write(753,*) Tsurf        ! Surface temperature
+!    ! number of species
+!    if (teil%n_atoms .ne. 0) then
+!        write(753,*) 2
+!    else
+!        write(753,*) 1
+!    end if
+    ! name, number of atoms, no of fixed atoms
+    ! masses, number of parameters, file name parameters, paramter values
+    ! propagator
+    write(753,*) name_l, slab%n_atoms, slab%nofix,&
+               mass_l, npars_l,key_l
+    write(753,*) pars_l, md_algo_l
+
+    write(753,*) a_lat        ! lattice constant
+    write(753,*) cell_mat     ! Cell matrix
+    write(753,*) slab%r, slab%v, slab%dens !slab%a
+    if (teil%n_atoms .ne. 0) then
+        write(753,*) name_p, teil%n_atoms, teil%nofix, &
+                   mass_p, npars_p, key_p
+        write(753,*) pars_p, md_algo_p
+        write(753,*) teil%r, teil%v,teil%dens !, teil%a,
+    end if
+
+
+    close(753)
+    !filename = 'gzip '//filename
+    !call system(filename)
+    save_counter = save_counter+1
+
+end subroutine out_posvel
 
 end module output
 !subroutine out_all(slab, teil, itraj, Eref)

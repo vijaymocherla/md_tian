@@ -45,6 +45,7 @@ imass_p = 1.0d0/mass_p
 ! Lowest permitted projectile position
 proj_downgone = slab%r(3,slab%n_atoms) - 3.0d0
 
+
 ! Allocate useful arrays
 allocate(rmin_p(3,teil%n_atoms),rbounce(5,3,teil%n_atoms))
 allocate(col_start(teil%n_atoms),col_end(teil%n_atoms))
@@ -78,7 +79,8 @@ if (confname == 'poscar') then
         end select
     end if
     Eref = Epot
-    print *, Eref
+    print *, 'Eref = ', Eref
+!    stop
 !    print *, slab%n_atoms
 !    call open_for_write(14,'trial.dat')
 !    write(14,'(3f15.10)') cell_mat
@@ -168,8 +170,14 @@ do itraj = start_tr, ntrajs+start_tr-1
             teil%a  = teil%f*imass_p
             teil%ao = teil%a
             teil%au = teil%ao
-            if (md_algo_p == 5) pEfric = pEfric+teil%dens(i)*&
-                                (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)
+
+            if (md_algo_p == 5) then
+                do i = 1, teil%n_atoms
+                    pEfric = teil%dens(i)*&
+                            (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)
+                end do
+            end if
+
         else
             select case (pes_key)
                 case (0)
@@ -294,6 +302,9 @@ do itraj = start_tr, ntrajs+start_tr-1
 
                 case(-2)
                     call out_all(slab, teil,itraj,Eref)
+
+                case(-4)
+                    call out_posvel(slab, teil, itraj, Eref)
 
                 case default ! full configuration of system
                     if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)

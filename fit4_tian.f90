@@ -39,19 +39,22 @@ character(20) :: TITLE ! string of 20 characters used for title on printout
 integer :: itemp3(3), natoms,q
 real(8) :: sumsq, ncells, Eref, se,pdens
 
-character(len=100) teil_nml_out, slab_nml_out
+character(len=100) teil_nml_out, slab_nml_out ! directory in which parameter-files are.
 
-ncells = 1.0d0/((2*rep(1)+1)*(2*rep(2)+1))
+ncells = 1.0d0/((2*rep(1)+1)*(2*rep(2)+1)) ! 1/number of atoms in layer
 IB = ibt
 ip = ipc
 
-itemp3 = shape(x_all)
-npts = itemp3(1)
-natoms = itemp3(3)
+itemp3 = shape(x_all)   ! shape of array with all coordinates
+npts = itemp3(1)        ! number of configurations
+natoms = itemp3(3)      ! number of atoms in system
 
-X(1:npts,:,1:natoms) = x_all
-Y(1:npts) = y_all
+X(1:npts,:,1:natoms) = x_all    ! configurations
+                                ! the first configuration is H above the perfect surface
+                                ! to calculate the reference energy.
+Y(1:npts) = y_all               ! corresponding energies
 
+! Name of output parameter files.
 teil_nml_out  = trim(fit_dir)//'emt'//trim(fitnum)//'_'//trim(name_p)//'.nml'
 slab_nml_out  = trim(fit_dir)//'emt'//trim(fitnum)//'_'//trim(name_l)//'.nml'
 
@@ -61,12 +64,13 @@ slab_nml_out  = trim(fit_dir)//'emt'//trim(fitnum)//'_'//trim(name_l)//'.nml'
 !------------------------------------------------------------------------------------------------------------------
 
 if (npts > 0 ) then
-    if (confname == 'fit') then
+    if (confname == 'fit') then ! If fit is done to energies energies
 
         write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
         write(*,*) 'site X Y Z EMT DFT'
         sumsq = 0
 
+        ! Calculate the EMT-reference energy.
         slab%r = x_all(1,:,teil%n_atoms+1:natoms)
         if (teil%n_atoms > 0) then
             teil%r = x_all(1,:,1:teil%n_atoms)
@@ -76,6 +80,7 @@ if (npts > 0 ) then
         end if
         Eref = Epot
 
+        ! Calculate the rms between input and emt at the beginning of the fit.
         do q=2,npts
             slab%r = x_all(q,:,teil%n_atoms+1:natoms)
             if (teil%n_atoms > 0) then
@@ -92,14 +97,11 @@ if (npts > 0 ) then
             sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
         end do
         write(*,*)
-    !    write(10,*)
         write(*,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', Eref
-    !    write(10,*) 'rms error using starting parameters =',sqrt(sumsq/npts), ' Eref=', E_ref
-    !    write(*,*)
-    !    write(10,*)
 
-! Density Fit
-    elseif (confname == 'dens') then
+
+! Density Fit. Not recommended
+    elseif (confname == 'dens') then    ! If fit is done to densities
 
         write(*,'(/(a))')'CHECK EMT ENERGY CALCULATION IS WORKING'
         write(*,*) 'site X Y Z EMT DFT'
@@ -139,8 +141,8 @@ end if
 ! kappa     6       13
 ! s0        7       14
 !
-B(1:7)  = pars_p
-B(8:14) = pars_l
+B(1:7)  = pars_p    ! Parameters of the particle
+B(8:14) = pars_l    ! Parameters of the slab
 
 !--------------------------------------------------------------------------
 ! SET UP NARRAY
@@ -167,11 +169,13 @@ ARRAY(8) = 1d-31 ! ZETA - CRITERION FOR 1E-31
 
 TITLE = 'EMT_fit'
 
-!CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
+CALL NLLSQ ( Y , X , B , RRR , NARRAY , ARRAY , IB , TITLE)
 
+! transfer parameters after fitting.
 pars_l = B(8:14)
 pars_p = B(1:7)
 
+! Write  new parameter files
 call open_for_write(11,teil_nml_out)
 write(11, *) 'Projectile EMT Parameters'
 write(11, *) 'Name= '//trim(name_p)
@@ -187,9 +191,9 @@ close(11)
 sumsq=0.0d0
 se=0.0d0
 call emt_e_fit(x_all(1,:,:nl_atoms+np_atoms), Eref)
-call dev2eqdft(Eref)
-call dev2aimddft(Eref)
-call denseqdft(Eref)
+call dev2eqdft(Eref)        ! EMT-Energy for Equilibrium-DFT-points
+call dev2aimddft(Eref)      ! How does new fit reproduce AIMD? C44?
+call denseqdft(Eref)        ! Density at 10 Equilibrium sites
 
 if (confname == 'fit') then
     do q=2,npts
@@ -224,7 +228,7 @@ subroutine dev2eqdft(Eref)
     real(8), dimension(:,:,:), allocatable :: array
     real(8) :: energy, Eref
 
-    call open_for_read(69,trim(fit_dir)//'Eq_points_dft.dat')
+    call open_for_read(69,trim(fit_dir)//'Eq_points_dft.dat') ! Contains input geometries for all 10 sites
     npts=1500
     allocate(fix_p(npts,3))
     do j = 1,npts
@@ -240,6 +244,7 @@ subroutine dev2eqdft(Eref)
         array(j,:,np_atoms+1:) = x_all(1,:,np_atoms+1:)
     end do
 
+    ! Calculate energy and write into output file.
     call open_for_write(17,trim(fit_dir)//'dev2Eqdft'//trim(fitnum)//'.dat')
     do j=1,1500
         call emt_e_fit(array(j,:,:nl_atoms+np_atoms), energy)
@@ -255,8 +260,8 @@ end subroutine dev2eqdft
 subroutine denseqdft(Eref)
     !
     ! Purpose:
-    !           Calculate points at equilibrium positions for all 10 sites.
-    !           For comparison of new fit with input DFT-equilibirum points.
+    !           Calculate density for all 10 sites.
+    !           For comparison of new fit with input DFT-equilibirum-density.
     !
 
     integer :: npts, j
@@ -331,6 +336,7 @@ subroutine dev2aimddft(Eref)
         deallocate(d_l3,d_p3)
 
         do q=1,npts
+            array(q,3,1:9) = 6.0d0
             call emt_e_fit(array(q,:,:nl_atoms+np_atoms), energy)
             write(1,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
             !write(*,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
@@ -458,7 +464,7 @@ subroutine readinaimd(pos_l_p,energy_l_p, d_l3, d_p3, npts, E_dft1)
 
 end subroutine readinaimd
 
-subroutine restricted_fit(ip, ib)
+subroutine restricted_fit(ip, ib) ! This does not work.
     !
     ! Purpose:
     !           Restrict fitting parameters to 'save' shear modulus

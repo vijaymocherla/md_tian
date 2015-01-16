@@ -76,6 +76,7 @@ if (confname == 'fit') then
         F   = energy
         RES = YDAT(I) - F
 
+! Output option
 !        if ( ((mod(i,10)==0) .or. (i==N))) then
 !            if (iteration > 0) write(*,1000) iteration, i, YDAT(i), F, B(1:14)
 !            !write(*,1000) iteration, i, YDAT(i), YDAT(i)-F, B(1:14)
@@ -118,6 +119,7 @@ if (confname == 'fit') then
             !print *, pars_l(5)*pars_l(6)*(beta*pars_l(1)-pars_l(6))/(pars_l(7)*8.0d0*pi)
         end if
 
+! NUMERICAL DERIVATIVES
 !        ! Comment in if you want to Check the Derivatives.
 !        call emt_ddens_fit(xdat(2,:,:nl_atoms+np_atoms), energy, denergy)
 !        rs=2
@@ -148,6 +150,8 @@ if (confname == 'fit') then
         RRR(I) = F
 
     end select
+
+! IF DENSITY IS FITTED. DON'T DO THAT.
 
 !else if (confname == 'dens') then
 !    select case(jp)

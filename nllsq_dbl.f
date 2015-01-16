@@ -59,7 +59,7 @@ C
 C**********************************************************************
 C     Change impliit type of from REAL to REAL(8)                   ***
 C**********************************************************************
-      IMPLICIT REAL(8) (A-H,O-Z)
+      IMPLICITREAL(8) (A-H,O-Z)
 
 
       COMMON/BLK1/B(20),P(20),RE,N,M,K
