@@ -151,4 +151,26 @@ uvec = r3temp/r                         ! director from a to b
 
 end subroutine pbc_distdir
 
+function lines_in_file(lunit, file_name)
+    implicit none
+    !
+    ! Purpose: Count the number of lines in file 'file_name'.
+    !          This allows for run-time determination of number sample points.
+    !
+    integer, intent(in)         :: lunit
+    character(*), intent(in)    :: file_name
+    integer                     :: ios, lines_in_file
+
+    lines_in_file = 0
+    open(lunit, file=file_name)
+    do
+        read(lunit,*, IOSTAT=ios)
+        if (ios /= 0) exit
+        lines_in_file = lines_in_file + 1
+    end do
+    close(lunit)
+    return
+end function
+
+
 end module useful_things
