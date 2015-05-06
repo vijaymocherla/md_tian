@@ -258,7 +258,7 @@ subroutine dev2eqdft(Eref)
     real(8) :: energy, Eref
 
     call open_for_read(69,trim(fit_dir)//'Eq_points_dft.dat') ! Contains input geometries for all 10 sites
-    npts=1500
+    npts=lines_in_file(581, trim(fit_dir)//'Eq_points_dft.dat')
     allocate(fix_p(npts,3))
     do j = 1,npts
         read(69,*) fix_p(j,:)
@@ -275,9 +275,9 @@ subroutine dev2eqdft(Eref)
 
     ! Calculate energy and write into output file.
     call open_for_write(17,trim(fit_dir)//'dev2Eqdft'//trim(fitnum)//'.dat')
-    do j=1,1500
+    do j=1,npts
         call emt_e_fit(array(j,:,:nl_atoms+np_atoms), energy)
-        write(17,'(I4, 4f15.5)') (j+150-1)/150, array(j,1,5), array(j,2,5),&
+        write(17,'(I4, 4f15.5)') (j+(npts/10)-1)/(npts/10), array(j,1,5), array(j,2,5),&
                                  array(j,3,5), (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
     end do
     close(17)
@@ -293,14 +293,16 @@ subroutine denseqdft(Eref)
     !           For comparison of new fit with input DFT-equilibirum-density.
     !
 
-    integer :: npts, j
+    integer :: j, npts
     real(8), dimension(:,:),   allocatable :: fix_p
     real(8), dimension(:,:,:), allocatable :: array
     real(8) :: energy, Eref
     real(8) :: pdens
 
     call open_for_read(69,trim(fit_dir)//'/Eq_points_dft.dat')
-    npts=1500
+
+    npts = lines_in_file(581, trim(fit_dir)//'/Eq_points_dft.dat')
+
     allocate(fix_p(npts,3))
     do j = 1,npts
         read(69,*) fix_p(j,:)
@@ -316,9 +318,9 @@ subroutine denseqdft(Eref)
     end do
 
     call open_for_write(17,trim(fit_dir)//'densEqdft'//trim(fitnum)//'.dat')
-    do j=1,1500
+    do j=1,npts
         call emt_dens_fit(array(j,:,:nl_atoms+np_atoms), energy,pdens)
-        write(17,'(I4, 3f15.5, f20.7)') (j+150-1)/150, array(j,1,5), array(j,2,5),&
+        write(17,'(I4, 3f15.5, f20.7)') (j+(npts/10)-1)/(npts/10), array(j,1,5), array(j,2,5),&
                                  array(j,3,5), pdens
     !deallocate(pdens)
     end do
