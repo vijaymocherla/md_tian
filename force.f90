@@ -539,6 +539,7 @@ subroutine emt_e(slab, teil)
     igamma1p = 1.0d0 / sum(xp*exp(   -pars_p(1) * r3temp))
     igamma2p = 1.0d0 / sum(xp*exp(-kappadbeta_p * r3temp))
 
+
 !------------------------------------------------------------------------------
 !                          Sigma and Pair-wise Contributions
 !                          =================================
@@ -1103,7 +1104,7 @@ subroutine emt_e_fit(xdata, energy)
 ! is usually larger for them.
     !a_lat = 4.2010d0
     rcut = betas0_l * sqrt3
-    rcut = a_lat * sqrt3 * isqrt2
+    !rcut = a_lat * sqrt3 * isqrt2
     rr = 4.0d0 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
@@ -1143,7 +1144,6 @@ subroutine emt_e_fit(xdata, energy)
     V_pl        = 0.0d0
     vref_l      = 0.0d0
     vref_p      = 0.0d0
-
     ! slab-slab
     do i = 1, nl_atoms
         do j = i+1, nl_atoms
@@ -1285,6 +1285,7 @@ subroutine emt_e_fit(xdata, energy)
 !-------------------------------TOTAL ENERGY---------------------------------
 
     energy = Ecoh_l + Ecoh_p - V_ll - V_pp - 0.50d0*(V_lp + V_pl - vref_l - vref_p)
+
 
     deallocate( s_p,  s_l,  sigma_pl,  sigma_lp, sigma_pp,  sigma_ll)
 

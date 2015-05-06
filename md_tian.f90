@@ -30,7 +30,7 @@ integer, dimension(:), allocatable   :: col_start, col_end  ! collision time
 integer, dimension(:), allocatable   :: imp, q_imp          ! collision number
 logical :: exit_key, imp_switch
 real(8), dimension(:), allocatable :: eed, eed_prec         ! embedded electron density for projectile
-real(8) :: Eref                                             ! reference energy
+real(8) :: Eref, leng,mm, no                                            ! reference energy
 
 !timing
 !real(8) :: start, fin
@@ -86,28 +86,36 @@ if (confname == 'poscar') then
 !    write(14,'(3f15.10)') cell_mat
 !    write(14,*) slab%n_atoms
 !    write(14,'(3f15.10)') slab%r
-!    write(14,'(3f15.10)') teil%r
-!    print *, slab%n_atoms
+!!    write(14,'(3f15.10)') teil%r
+!    close(14)
+!!    print *, slab%n_atoms
 !    stop
 end if
 
-!!Check how much energy won by H to vacuum
-!teil%r(:,1) = (/0.0d0, 0.0d0, 6.0d0/)
-!!slab%r(:,17) = (/0.0d0, 0.0d0, 6.0d0+ 1.590d0 /)
-!!print *, teil%r
-!!print *, slab%r(:,17)
-!call emt_e(slab,teil)
-!print *, Epot-Eref
-!!print *, 'D E',(Epot-Eref)-0.95569987d0
-!call open_for_append(14,'Au_H_at_6A.dat')
-!!    call open_for_write(14,'trial.dat')
-!!    write(14,'(3f15.10)') slab%r
-!!    write(14,'(3f15.10)') teil%r
-!!write(14,'(A5,7A8,7A8,A8)') 'fit', 'E(H-Au)/eV'
-!write(14,'(A5,15f15.5)') key_l(31:34), Epot-Eref
+!!Check how much energy won by forming H-Au to vacuum
+!! For that, the equilibrium bond-length of the H-Au molecule also has to be calculated
+!mm=20
+!do i=0,1! 200
+!    leng = 1.0d0+ i/100.0d0
+!    teil%r(:,1) = (/0.0d0, 0.0d0, 6.0d0/)
+!    slab%r(:,17) = (/0.0d0, 0.0d0, 6.0d0+ 1.43 /)
+!    ! 1.524 is the literature value for the Au-H bondlength (CRC)
+!    ! 1.59 is the value we've been using so far. If you want to stay with the old way
+!    ! of analysing the H-Au formation energy, you should be using the following line
+!    ! instead of the above one:
+!    ! slab%r(:,17) = (/0.0d0, 0.0d0, 6.0d0+ 1.59d0 /)
+!    call emt_e(slab,teil)
+!    !print *, Epot1, Epot-Eref
+!    if (mm>Epot-Eref) then
+!        mm=Epot-Eref
+!        no = leng
+!    end if
+!end do
+!call open_for_append(14,'Au_H_dist_minE.dat')
+!!write(14,'(A5,15f15.5)') key_l(12:15),no, mm
+!print *, key_l(12:15),no, mm
 !close(14)
 !stop
-
 
 
 if (confname == 'fit') then
@@ -148,7 +156,6 @@ do itraj = start_tr, ntrajs+start_tr-1
     q_imp       = 0
     eed_prec     = 0.0d0
 
-
 ! Skip initialisation routine for Annealing after 1st trajectory
     if ((sasteps > 0) .and. (itraj > 1)) then
 
@@ -172,9 +179,9 @@ do itraj = start_tr, ntrajs+start_tr-1
             teil%au = teil%ao
 
             if (md_algo_p == 5) then
-                do i = 1, teil%n_atoms
-                    pEfric = teil%dens(i)*&
-                            (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)
+                do i = 1, teil%n_atoms !Do we also need to multiply with the timestep here?
+                    pEfric = teil%dens(i)*step*&
+                            (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)/imass_p!*step
                 end do
             end if
 
@@ -202,12 +209,14 @@ do itraj = start_tr, ntrajs+start_tr-1
     !timing
     !call cpu_time(start)
 
+
 !------------------------------------------------------------------------------
 !
 !                         LOOP OVER TIME STEPS
 !
 !------------------------------------------------------------------------------
     do q = 1, nsteps
+!        print *, q
 
 !--------------------- SIMULATED ANNEALING ROUTINE ----------------------------
 
@@ -267,11 +276,11 @@ do itraj = start_tr, ntrajs+start_tr-1
                 end if
                 eed_prec = eed
                 ! Calculate post Electronic friction
-                ! pef = Int(_t0^tend) eta_fric*v^2
+                ! pef = Int(_t0^tend) eta_fric*v^2 dt
                 if (md_algo_p == 5) then
                     call ldfa(teil)
-                    pEfric = pEfric+teil%dens(i)*&
-                             (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)
+                    pEfric = pEfric+teil%dens(i)*step*&
+                             (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)/imass_p
                 end if
 
             end do
@@ -305,6 +314,8 @@ do itraj = start_tr, ntrajs+start_tr-1
 
                 case(-4)
                     call out_posvel(slab, teil, itraj, Eref)
+                case(-5)
+                    call out_pdb(slab, teil, q, Eref)
 
                 case default ! full configuration of system
                     if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)

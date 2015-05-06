@@ -154,7 +154,6 @@ call random_seed(size=randk)
         read(38, '(A)', iostat=ios) buffer
         if (ios == 0) then
             line = line + 1
-
         ! Find the first instance of whitespace.  Split label and data.
             pos1 = scan(buffer, ' ')
             label = buffer(1:pos1)
@@ -804,9 +803,10 @@ real(8), dimension(3,3):: c_matrix
 real(8) :: rtemp
 integer :: i, j, ios, itemp, q, l, k, r, s
 real(8), dimension(3) :: empty3
-real(8), dimension(:), allocatable :: y_eq, E_dft1
+real(8), dimension(:), allocatable :: y_eq, E_dft1, E_dft2
 real(8), dimension(:,:), allocatable :: dfix, start_l
-real(8), dimension(:,:,:),allocatable :: x_eq, aimd_l, aimd_p, d_l3, d_p3
+real(8), dimension(:,:,:),allocatable :: x_eq, aimd_l, aimd_l1, aimd_p
+real(8), dimension(:,:,:),allocatable :: d_l3, d_p3, aimd_p1
 character(len=80) :: str, buffer
 
 ! Check if Equilibrium-data exists.
@@ -889,26 +889,51 @@ if (fracaimd(2) > 0 ) then
     rewind(17)
     npts(2) = i - 3
 
-    allocate(E_dft1(npts(2)))
-    allocate(aimd_l(npts(2),3,n_l0))
+    allocate(E_dft2(npts(2)))
+    allocate(aimd_l1(npts(2),3,n_l0))
     allocate(dfix(3,n_l0))
-    allocate(aimd_p(npts(2),3,n_p0))
+    allocate(aimd_p1(npts(2),3,n_p0))
 
 ! Read in positions and energies together
     read(17,'(A)') buffer
-    read(17,*) rtemp, rtemp, E_dft1(1)
-    read(18,*) aimd_l(1,:,:)
-    if (n_p0 > 0) read(18,*) aimd_p(1,:,:)
+    read(17,*) rtemp, rtemp, E_dft2(1)
+    read(18,*) aimd_l1(1,:,:)
+    if (n_p0 > 0) read(18,*) aimd_p1(1,:,:)
 
     j=2
     do i=2,npts(2)
-        read(17,*) rtemp, rtemp, E_dft1(j)
-        read(18,*) aimd_l(j,:,:)
-        if (n_p0 > 0) read(18,*) aimd_p(j,:,:)
-        rtemp = E_dft1(j-1) - E_dft1(j)
+        read(17,*) rtemp, rtemp, E_dft2(j)
+        read(18,*) aimd_l1(j,:,:)
+        if (n_p0 > 0) read(18,*) aimd_p1(j,:,:)
+        rtemp = E_dft2(j-1) - E_dft2(j)
         if (abs(rtemp) >= de_aimd_max) j = j + 1
     end do
     npts(2) = j - 1
+
+! Exclude points which are above the energy specified for e_max_aimd value
+! First: See which points do not lie below the cut-off-energy
+j=0
+do i= 1, npts(2)
+    if (Abs(E_dft2(i) - evasp)<=e_max_aimd ) j=j+1
+!    if ((E_dft2(i) - evasp)<=e_max_aimd ) j=j+1
+end do
+q=npts(2)
+npts(2) = j
+
+! Second: build new arrays that only include the atoms below the cut-off-energy
+allocate(E_dft1(npts(2)),aimd_l(npts(2),3,n_l0),aimd_p(npts(2),3,n_p0))
+j=0
+do i=1,q
+    if (Abs(E_dft2(i) - evasp)<=e_max_aimd ) then
+!    if ((E_dft2(i) - evasp)<=e_max_aimd ) then
+        j = j+1
+        E_dft1(j)=E_dft2(i)
+        aimd_l(j,:,:) = aimd_l1(i,:,:)
+        aimd_p(j,:,:) = aimd_p1(i,:,:)
+    end if
+end do
+deallocate(E_dft2,aimd_l1,aimd_p1)
+
 
     if (npts(2) < fracaimd(2)) then
         fracaimd(2) = npts(2)
@@ -1003,7 +1028,6 @@ end if
         end if
         nl_atoms = n_l
 
-
 end subroutine read_fit
 
 subroutine traj_init(slab, teil, Eref)
@@ -1059,7 +1083,7 @@ subroutine traj_init(slab, teil, Eref)
     read(38) slab%r, slab%v, slab%a, slab%dens
 
     if (.not.md_algo_p_key .and. nspec > 1) then
-        read(38) ddd, ymm, ymm, dum, ddd, ymm, ddd
+        read(38) ddd, ymm, ymm, dum, ymm, ddd
         read(38) (dum, i=1,ymm), ymm
         read(38) teil%r, teil%v, teil%a, teil%dens
     end if

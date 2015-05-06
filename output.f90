@@ -116,7 +116,6 @@ subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbou
     write(753,'(3f15.5)') teil%r
     write(753,'(A11)')'v_p (A/fs):'
     write(753,'(3e15.5)') teil%v
-print *, Ekin_l
 
     if (.not. overwrite) then
         write(753,'(A12)')'r_min_p (A):'
@@ -196,9 +195,9 @@ xdatx=0.0d0
 xdatx(1,1:slab%n_atoms)= slab%r(1,:)
 xdatx(2,1:slab%n_atoms)= slab%r(2,:)
 xdatx(3,1:slab%n_atoms)= slab%r(3,:)
-xdatx(1,:slab%n_atoms+1:n)=teil%r(1,:)
-xdatx(2,:slab%n_atoms+1:n)=teil%r(2,:)
-xdatx(3,:slab%n_atoms+1:n)=teil%r(3,:)
+xdatx(1,slab%n_atoms+1:n)=teil%r(1,:)
+xdatx(2,slab%n_atoms+1:n)=teil%r(2,:)
+xdatx(3,slab%n_atoms+1:n)=teil%r(3,:)
 
 ! Get all atoms into unit-cell
 xdatx = matmul(cell_imat,xdatx)
@@ -226,8 +225,11 @@ xdatx = matmul(cell_mat,xdatx)
     ! Here comes the output
     write(753,*) slab%n_atoms+teil%n_atoms
     write(753,*)
-    do i = 1, slab%n_atoms+teil%n_atoms
+    do i = 1, slab%n_atoms
         write(753,*) 'Au  ', xdatx(:,i)
+    end do
+    do i = slab%n_atoms +1 , slab%n_atoms+teil%n_atoms
+        write(753,*) 'H  ', xdatx(:,i)
     end do
 
     save_counter = save_counter+1
@@ -310,7 +312,7 @@ function sartre(itraj)
 
 end function sartre
 
-subroutine out_posvel(slab, teil, itraj, Eref)
+subroutine out_posvel(slab, teil, itraj, Eref) !mxt_rv.dat
     !
     ! Purpose:
     !           Prints out all the geometries and velocities along the trajectory.
@@ -321,11 +323,18 @@ subroutine out_posvel(slab, teil, itraj, Eref)
     real(8) :: Eref
     integer :: ios, itraj
     character(len=8) str
-    character(len=90) filename
+    character(len=90) filename,buffer
+    character(len=80) sys
 
     write(str,'(I8.8)') save_counter
 
-    filename = 'conf/mxt_rv'//str//'.dat'
+    !filename = 'conf/mxt_rv'//str//'.dat'
+    sys = 'pwd > filename.txt'
+    call system(sys)
+    call open_for_read(33,'filename.txt')
+    read(33,'(A)',iostat=ios) buffer
+    close(33)
+    filename = trim(buffer)//'/conf/mxt_rv'//str//'.dat'
 
     open (753,file=filename, status='replace', &
                     action='write', iostat=ios)
@@ -365,64 +374,75 @@ subroutine out_posvel(slab, teil, itraj, Eref)
 
 end subroutine out_posvel
 
+subroutine out_pdb(slab, teil, q, Eref) !mxt_conf.pdb
+    !
+    ! Purpose:
+    !           Prints out all the geometries along the trajectory.
+    !           saved as .pdb-file
+    !           Be careful. This option will take up a lot of disc-space.
+    !
+
+    type(atoms) :: slab, teil
+    real(8) :: Eref
+    integer :: ios, q,i, n
+    character(len=8) str
+    character(len=90) filename
+!    real(8), allocatable, dimension(:,:) :: xdatx
+
+write(str,'(I8)') q
+filename = 'conf/mxt_conf'//str//'.pdb'
+
+n=slab%n_atoms+teil%n_atoms
+
+    if (overwrite) then
+        open (753,file=filename, status='replace', &
+                    action='write', iostat=ios)
+    else
+        call open_for_append(753,filename)
+    end if
+
+
+    ! Here comes the output
+    write(753,'(A6,3f9.3,3f7.2, A11)') 'CRYST1', cell_mat(1,1),&
+             cell_mat(1,1),cell_mat(3,3), 90.00,90.00,120.00,'f m 3 m  4'
+
+    do i=1,slab%n_atoms
+        write(753,'(A6,I5, A1, A4,A1,A3,A2,I4,A4,3f8.3,2f6.2,A10,A2,A2)') &
+                    'ATOM  ', i, &
+                    ' ',&
+                    'Au',&
+                    ' ',&
+                    'UNK',&
+                    ' ',&
+                    1,&
+                    ' ',&
+                    slab%r(1,i),slab%r(2,i),slab%r(3,i),1.00,0.00,&
+                    ' ',&
+                    'Au',&
+                    ' '
+    end do
+    do i=1,teil%n_atoms
+        write(753,'(A6,I5, A1, A4,A1,A3,A2,I4,A4,3f8.3,2f6.2,A10,A2,A2)') &
+                    'ATOM  ', i, &
+                    ' ',&
+                    'H',&
+                    ' ',&
+                    'UNK',&
+                    ' ',&
+                    1,&
+                    ' ',&
+                    teil%r(1,i),teil%r(2,i),teil%r(3,i),1.00,0.00,&
+                    ' ',&
+                    ' H',&
+                    ' '
+    end do
+
+    save_counter = save_counter+1
+    close(753)
+    overwrite = .false.
+end subroutine out_pdb
+
+
+
+
 end module output
-!subroutine out_all(slab, teil, itraj, Eref)
-!    !
-!    ! Purpose:
-!    !           Prints out all the geometries along the trajectory.
-!    !           Structure is the same as for full_conf, only a dat-file is created.
-!    !           Be careful. This option will take up a lot of space.
-!    !
-!
-!    type(atoms) :: slab, teil
-!    real(8) :: Eref
-!    integer :: ios, itraj
-!    character(len=8) str
-!    character(len=90) filename
-!
-!    write(str,'(I8.8)') save_counter
-!
-!    filename = 'conf/mxt_conf'//str//'.dat'
-!
-!    open (753,file=filename, status='replace', &
-!                    action='write', iostat=ios)
-!
-!    ! Here comes the output
-!
-!    write(753,*) itraj        ! Number of trajectory
-!    write(753,*) step         ! time step
-!    write(753,*) Epot, Eref
-!    write(753,*) Tsurf        ! Surface temperature
-!    ! number of species
-!    if (teil%n_atoms .ne. 0) then
-!        write(753,*) 2
-!    else
-!        write(753,*) 1
-!    end if
-!    ! potential and neighbouring
-!!    write(753,*) pes_name!, pes_nigh
-!    ! name, number of atoms, no of fixed atoms
-!    ! masses, number of parameters, file name parameters, paramter values
-!    ! propagator
-!    write(753,*) name_l, slab%n_atoms, slab%nofix,&
-!               mass_l, npars_l,key_l
-!    write(753,*) pars_l, md_algo_l
-!
-!    write(753,*) a_lat        ! lattice constant
-!    write(753,*) cell_mat     ! Cell matrix
-!    write(753,*) cell_imat    ! inverse cell matrix
-!    write(753,*) slab%r, slab%v, slab%a, slab%dens
-!    if (teil%n_atoms .ne. 0) then
-!        write(753,*) name_p, teil%n_atoms, teil%nofix, &
-!                   mass_p, npars_p, key_p
-!        write(753,*) pars_p, md_algo_p
-!        write(753,*) teil%r, teil%v, teil%a, teil%dens
-!    end if
-!
-!
-!    close(753)
-!    !filename = 'gzip '//filename
-!    !call system(filename)
-!    save_counter = save_counter+1
-!
-!end subroutine out_all

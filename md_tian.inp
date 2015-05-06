@@ -1,12 +1,12 @@
-start 10001
-ntrajs 1
+start 10054
+ntrajs 1000
 step 0.1
-nsteps 10
-wstep -1 1
+nsteps 10000
+wstep 0 1
 Einc 2.72
-inclination 45
+inclination 20
 azimuth 60
 pes emt
 projectile H   1.0079  7 emt515_H.nml lan  1
-conf mxt "/home/sjanke/git/md_tian/conf1" 1
-pip 0
+conf mxt "F515/movie/p515_ver_6x6x4_T300/conf" 1000
+pip 0 6.0

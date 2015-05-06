@@ -36,10 +36,13 @@ real(8), dimension(8) :: ARRAY = 0.0 ! Array of statistical parameters. Use 0.0 
 character(20) :: TITLE ! string of 20 characters used for title on printout
 
 ! Variables, non nllsq-related
-integer :: itemp3(3), natoms,q
+integer :: itemp3(3), natoms,q,i
 real(8) :: sumsq, ncells, Eref, se,pdens
 
 character(len=100) teil_nml_out, slab_nml_out ! directory in which parameter-files are.
+
+real(8) :: mm,no,leng, Epot1 ! calculate the H-Au bondlength
+real(8), dimension(:,:), allocatable :: blen ! array to calculate the H-Au bondlength
 
 ncells = 1.0d0/((2*rep(1)+1)*(2*rep(2)+1)) ! 1/number of atoms in layer
 IB = ibt
@@ -190,9 +193,37 @@ close(11)
 
 sumsq=0.0d0
 se=0.0d0
+
+!Calculate energy that would be won by abstracting Au-atom from bulk
+! and forming H-Au.
+! We only need one H-atom per cell
+allocate(blen(3,slab%n_atoms+1))
+blen(:,1) =(/0.0d0, 0.0d0, 6.0d0/)
+blen(:,2:1+slab%n_atoms)= x_all(1,:,teil%n_atoms+1:natoms)
+np_atoms =1
+call emt_e_fit(blen,Epot)
+mm=20
+! Calculate minimum bond length
+! and energy won/lost by abstracting Au-atom and forming H-Au
+do q=0,200
+    leng = 1.0d0+ q/100.0d0
+    blen(3,18) =  6.0d0+ leng
+    call emt_e_fit(blen,Epot1)
+    if (mm>Epot1-Epot) then
+        mm=Epot1-Epot
+        no = leng
+    end if
+end do
+mm=mm
+call open_for_append(14,'Au_H_dist_minE.dat')
+write(14,'(A5,15f15.5)') fitnum,no, mm
+print *, fitnum, ' Bondlength H-Au = ',no, 'A; H-Au formation energy =', mm, 'A'
+close(14)
+np_atoms= teil%n_atoms
+
 call emt_e_fit(x_all(1,:,:nl_atoms+np_atoms), Eref)
 call dev2eqdft(Eref)        ! EMT-Energy for Equilibrium-DFT-points
-call dev2aimddft(Eref)      ! How does new fit reproduce AIMD? C44?
+call dev2aimddft(Eref,mm)      ! How does new fit reproduce AIMD? C44?
 call denseqdft(Eref)        ! Density at 10 Equilibrium sites
 
 if (confname == 'fit') then
@@ -210,9 +241,7 @@ elseif (confname == 'dens') then
 
 end if
 sumsq=sqrt(sumsq/npts)*1000
-se=(se/npts)*1000
 print *, 'rms =',  sumsq, 'meV'
-print*,  'SE =', se, 'meV'
 
 end subroutine fit
 
@@ -300,14 +329,14 @@ subroutine denseqdft(Eref)
 end subroutine denseqdft
 
 
-subroutine dev2aimddft(Eref)
+subroutine dev2aimddft(Eref,mm)
     !
     ! Purpose:
     !           Calculate the energy for all AIMD trajectories with new EMT parameters.
     !           For comparison between input AIMD and new fit.
     !
-    real(8), intent(in) :: Eref
-    real(8) :: energy,sumsq = 0.0d0,sum1 = 0.0d0,c44= 0.0d0
+    real(8), intent(in) :: Eref,mm
+    real(8) :: energy,sumsq = 0.0d0,sum1 = 0.0d0,c44= 0.0d0,c11= 0.0d0,c12= 0.0d0
     character(len=80) :: pos_l_p, energy_l_p
     integer :: i, q, npts, col = 0
     character(len=1) :: str
@@ -336,7 +365,6 @@ subroutine dev2aimddft(Eref)
         deallocate(d_l3,d_p3)
 
         do q=1,npts
-            array(q,3,1:9) = 6.0d0
             call emt_e_fit(array(q,:,:nl_atoms+np_atoms), energy)
             write(1,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
             !write(*,'(I5, 2f20.10)') q, E_dft1(q)-evasp, (energy-Eref)/((2*rep(1)+1)*(2*rep(2)+1))
@@ -350,11 +378,17 @@ subroutine dev2aimddft(Eref)
     close(1)
     sumsq = Sqrt(sum1/col)*1000
     print*,'aimd_rms = ',sumsq, ' meV'
-    c44 = pars_l(5)*pars_l(6)*(beta*pars_l(1)-pars_l(6))/(8*pi*pars_l(7))*160.2176565
+    c44 = 3*pars_l(5)*pars_l(6)*(beta*pars_l(1)-pars_l(6))/(8*pi*pars_l(7))*160.2176565
+    c11 = (3*pars_l(5)*(beta*pars_l(1)-pars_l(6))*pars_l(5)-pars_l(3)*pars_l(4)**2)&
+          /(12*pi*pars_l(7))*160.2176565
+    c12 = (3*pars_l(5)*(-beta*pars_l(1)+pars_l(6))*pars_l(6)-2*pars_l(3)*pars_l(4)**2)&
+          /(24*pi*pars_l(7))*160.2176565
     print *, 'C44 = ', c44, ' GPa'
-!write(141,'(A6, 16f15.6)') fitnum, c44, sumsq, pars_l(1), pars_l(2), pars_l(3),&
-!             pars_l(4), pars_l(5), pars_l(6), pars_l(7), pars_p(1), pars_p(2), pars_p(3),&
-!             pars_p(4), pars_p(5), pars_p(6), pars_p(7)
+    print *, 'C11 = ', c11, ' GPa'
+    print *, 'C12 = ', c12, ' GPa'
+write(141,'(A6, 17f15.6)') fitnum, c44, mm, sumsq, pars_l(1), pars_l(2), pars_l(3),&
+             pars_l(4), pars_l(5), pars_l(6), pars_l(7), pars_p(1), pars_p(2), pars_p(3),&
+             pars_p(4), pars_p(5), pars_p(6), pars_p(7)
     close(141)
 
 end subroutine dev2aimddft
