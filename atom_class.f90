@@ -23,8 +23,8 @@ module atom_class
     real(8), parameter          :: twelfth  = 1.0d0/12.0d0
     integer, parameter          :: randseed(13)   = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
     real(8), parameter          :: e_max    = 20.0d0
-    real(8), parameter          :: e_max_aimd= 100.0d0
-    real(8), parameter          :: cutoff   = 1.50d0
+    real(8), parameter          :: e_max_aimd= 100.0d0 ! cut-off for fitting aimd-input-data-set
+    real(8), parameter          :: cutoff   = 1.50d0 ! Cut-off for energy calculations
 
     character(len=80), parameter:: fit_dir    = 'fitdata/'
     character(len=80), parameter:: fit_eq     = 'energy_eq.dat'

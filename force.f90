@@ -2774,7 +2774,7 @@ subroutine num_emt1(s)
 
 end subroutine num_emt1
 
-subroutine ldfa(s)
+subroutine ldfa(s,imass)
     !
     ! Purpose:
     !           Calculate the friction coefficient
@@ -2782,6 +2782,13 @@ subroutine ldfa(s)
     type(atoms) :: s
     integer :: i, j
     real(8) :: fric, temp
+    real(8) :: imass
+    ! As implemented here, the friction coefficient is only applicable for the
+    ! H-atom as calculated by Li and Wahnstrom(PRB46(1992)14528)
+    ! according to Puska and Nieminen (PRB, 27, 1983, 6121), the mass still
+    ! needs to be applied
+    ! hbar*eta = hbar**2/mass Q(kf) (conversion between PN and LW)
+    real(8), parameter :: convert= 1.00794d0*amu2mass
     real(8), dimension(12), parameter :: coefs = (/ 0.0802484d0,-1.12851d0,&
                                                       9.28508d0, 2.10064d0,&
                                                      -843.419d0, 8.85354d3,&
@@ -2811,7 +2818,7 @@ subroutine ldfa(s)
         s%dens(i)=fric
     end do
     ! xi in 1/fs
-    s%dens = s%dens / hbar
+    s%dens = s%dens*convert*imass / hbar
 
 end subroutine ldfa
 

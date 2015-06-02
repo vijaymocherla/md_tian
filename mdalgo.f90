@@ -82,12 +82,12 @@ subroutine propagator_2(s, md_algo, imass)
 
             case (3) ! Langevin
 
-                call ldfa(s)
+                call ldfa(s,imass)
                 call newton(s, imass)
                 call langevin_2(s,imass)
 
             case (4) ! Langevin up to 2nd order
-                call ldfa(s)
+                call ldfa(s,imass)
                 call newton(s, imass)
                 call langevins_2(s,imass)
             case (5)

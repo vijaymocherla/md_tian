@@ -394,6 +394,8 @@ end if
 if (confname == 'fit') then
     call read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
                     de_aimd_max, start_l, c_matrix)
+    ! Calculate the distance each AIMD-atom has to its equilibrium position
+    !call distance(c_matrix, n_l,n_confs)
 end if
 
 if (sasteps > 0) then
@@ -1251,6 +1253,73 @@ end do
 
 end subroutine neighbour_list
 
+subroutine distance(c_matrix, n_l, n_confs)
+    !
+    ! Purpose:
+    !           Calculate the deviation of all atoms from AIMD to their equilibrium positions.
+    !
+    integer, parameter :: at =1
+
+    real(8), dimension(3,3):: c_matrix
+    integer :: n_l,n_confs
+
+    character(len=3) :: str
+    integer :: i,q,j
+    integer, dimension(3)   :: nconf
+    integer, dimension(at)  :: nat ! number of the atom in the array
+    real(8), dimension(at)  :: mean
+    real(8)                 :: norm
+    real(8), dimension(:,:), allocatable :: shortest
+
+
+write(str,'(I3.3)') n_confs
+call open_for_write(87,'shortest_distance_HtoAu_all'//trim(str)//'.dat')
+write(87,*) 'Shortest distance of each atom during an AIMD traj to its perfect',&
+            'fcc surface positions (in Angstroem)'
+
+nconf=shape(x_all)
+allocate(shortest(nconf(1),at))
+shortest = 10000.0d0
+mean = 0.0d0
+j=at
+
+! need periodic boundary conditions.
+do q = 2, nconf(1) ! loop over the steps
+    do i = 10, n_l+9  ! to which Au atom is H closest?
+!        call pbc_dist(x_all(q,:,5), x_all(q,:,i), cell_mat, cell_imat, norm)
+        if (x_all(q,3,5)>6.5) x_all(q,3,5)=x_all(q,3,5)-cell_mat(3,3)
+        norm = sqrt((x_all(q,1,5)-x_all(q,1,i))**2+&
+                    (x_all(q,2,5)-x_all(q,2,i))**2+&
+                    (x_all(q,3,5)-x_all(q,3,i))**2)
+        if (norm < shortest(q,j)) shortest(q,j) = norm
+    end do
+!    print *, shortest(q,1)
+    mean(j) = mean(j) + shortest(q,j)
+    write(87,'(f12.5)') shortest(q,1)
+end do
+close(87)
+stop
+! For Au-atoms. not necessary
+!nat = (/26,27,28,29,62,63,64,65,98,99,100,101/)
+!do q = 2, nconf(1) ! loop over the steps
+!    do j = 1, at   ! loop over atoms
+!        do i = 10, n_l+9  ! to which atom is j closest?
+!            norm = sqrt((x_all(q,1,nat(j))-x_all(1,1,i))**2+&
+!                        (x_all(q,2,nat(j))-x_all(1,2,i))**2+&
+!                        (x_all(q,3,nat(j))-x_all(1,3,i))**2)
+!            if (norm < shortest(q,j)) shortest(q,j) = norm
+!        end do
+!        mean(j) = mean(j) + shortest(q,j)
+!    end do
+!    write(87,'(12f12.5)') shortest(q,1),shortest(q,2),shortest(q,3),shortest(q,4),&
+!                      shortest(q,5),shortest(q,6),shortest(q,7),shortest(q,8),&
+!                      shortest(q,9),shortest(q,10),shortest(q,11),&
+!                      shortest(q,12)
+!end do
+!close(87)
+
+stop
+end subroutine distance
 
 end module md_init
 
