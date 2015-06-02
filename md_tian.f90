@@ -173,7 +173,7 @@ do itraj = start_tr, ntrajs+start_tr-1
     !                call  lj(slab,teil)
             end select
             if (md_algo_p == 3 .or. md_algo_p == 4 &
-                .or. md_algo_p == 5) call ldfa(teil)
+                .or. md_algo_p == 5) call ldfa(teil,imass_p)
             teil%a  = teil%f*imass_p
             teil%ao = teil%a
             teil%au = teil%ao
@@ -194,7 +194,7 @@ do itraj = start_tr, ntrajs+start_tr-1
             end select
         end if
 
-        if (md_algo_l == 3 .or. md_algo_l == 4 ) call ldfa(slab)
+        if (md_algo_l == 3 .or. md_algo_l == 4 ) call ldfa(slab, imass_l)
         slab%a  = slab%f*imass_l
         slab%ao = slab%a
         slab%au = slab%ao
@@ -278,7 +278,7 @@ do itraj = start_tr, ntrajs+start_tr-1
                 ! Calculate post Electronic friction
                 ! pef = Int(_t0^tend) eta_fric*v^2 dt
                 if (md_algo_p == 5) then
-                    call ldfa(teil)
+                    call ldfa(teil, imass_p)
                     pEfric = pEfric+teil%dens(i)*step*&
                              (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)/imass_p
                 end if
