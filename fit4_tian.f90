@@ -39,7 +39,7 @@ contains
 
         ! Variables, non nllsq-related
         integer :: itemp3(3), natoms,q
-        real(8) :: sumsq, ncells, Eref, se,pdens
+        real(8) :: sumsq, ncells, Eref, se,pdens, sumsq_pure
 
         character(len=100) teil_nml_out, slab_nml_out ! directory in which parameter-files are.
 
@@ -167,6 +167,7 @@ contains
 
         TITLE = 'EMT_fit'
         CALL nllsqbc (Y, x_all , NARRAY , IB, natoms, ncells)
+
         !        print *, 'pars_p', pars_p
         !        print *, 'pars_l', pars_l
 
@@ -184,6 +185,7 @@ contains
         close(11)
 
         sumsq=0.0d0
+        sumsq_pure = 0.0d0
         se=0.0d0
 
         !Calculate energy that would be won by abstracting Au-atom from bulk
@@ -222,18 +224,23 @@ contains
             do q=2,npts
                 call emt_e_fit(x_all(q,:,:nl_atoms+np_atoms), Epot)
                 sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
-                se = se+Sqrt(((Epot-Eref)*ncells-Y(q))**2)
+                if (q <= fracaimd(1)+1) then
+                    sumsq_pure = sumsq_pure+((Epot-Eref)*ncells-Y(q))**2
+                endif
+!                se = se+Sqrt(((Epot-Eref)*ncells-Y(q))**2)
             end do
         elseif (confname == 'dens') then
             do q=2,npts
                 call emt_dens_fit(x_all(q,:,:nl_atoms+np_atoms), Epot,pdens)
                 sumsq=sumsq+(pdens-Y(q))**2
-                se = se+Sqrt((pdens-Y(q))**2)
+!                se = se+Sqrt((pdens-Y(q))**2)
             end do
 
         end if
         sumsq=sqrt(sumsq/npts)*1000
-        print *, 'rms =',  sumsq, 'meV'
+        sumsq_pure=sqrt(sumsq_pure/(fracaimd(1)+1))*1000
+        print *, 'combined_rms =',  sumsq, 'meV'
+        print *, 'energy_grid_rms =',  sumsq_pure, 'meV'
 
     end subroutine fit
 
@@ -337,15 +344,16 @@ contains
         character(len=80) :: nr
         real(8), dimension(:,:,:), allocatable :: d_l3, d_p3, array
         real(8), dimension(:), allocatable :: E_dft1
-        character(len=3), dimension(19) :: names     ! edit #trajs here
+        character(len=3), dimension(1) :: names     ! edit #trajs here
 
         write(str,'(2I1)') rep(1)
         nr=trim(fit_dir)//'traj'//trim(fitnum)//'_'//str
         call open_for_append(1,trim(nr)//'.dat')
         call open_for_append(141,'c44rms.dat')
-        names = (/'001','002','003','004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019'/)   ! edit #trajs here
+!        names = (/'001','002','003','004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019'/)   ! edit #trajs here
+        names = (/'001'/)   ! edit #trajs here
 
-        do i = 1, 19     ! edit #trajs here
+        do i = 1, 1     ! edit #trajs here
             print*, 'Calculating traj', names(i)
             pos_l_p=trim(fit_dir)//'traj'//names(i)//'/XDATCAR.dat'
             energy_l_p=trim(fit_dir)//'traj'//names(i)//'/analyse.dat'

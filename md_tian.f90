@@ -81,15 +81,15 @@ if (confname == 'poscar') then
     Eref = Epot
     print *, 'Eref = ', Eref
 !    stop
+    print *, slab%n_atoms
+    call open_for_write(14,'trial.dat')
+    write(14,'(3f15.10)') cell_mat
+    write(14,*) slab%n_atoms
+    write(14,'(3f15.10)') slab%r
+!    write(14,'(3f15.10)') teil%r
+    close(14)
 !    print *, slab%n_atoms
-!    call open_for_write(14,'trial.dat')
-!    write(14,'(3f15.10)') cell_mat
-!    write(14,*) slab%n_atoms
-!    write(14,'(3f15.10)') slab%r
-!!    write(14,'(3f15.10)') teil%r
-!    close(14)
-!!    print *, slab%n_atoms
-!    stop
+    stop
 end if
 
 !!Check how much energy won by forming H-Au to vacuum

@@ -52,11 +52,11 @@ module md_init
     real(8) :: a_lat                ! lattice constant
     real(8),dimension(3,3) :: cell_mat, cell_imat ! simulation cell matrix and its inverse
 
-    character(len=80) :: name_l, key_l
+    character(len=200) :: name_l, key_l
     character(len=80) :: name_p = 'Elerium'
     character(len=80) :: key_p_pos = 'top'
     character(len=80) :: pes_name = 'emt'
-    character(len=80) :: key_p = 'empty'
+    character(len=200) :: key_p = 'empty'
     integer :: npars_l ! number of parameters for lattice
     integer :: npars_p = 0
     integer :: np_atoms, nl_atoms
@@ -74,7 +74,7 @@ module md_init
     real(8), dimension(:), allocatable   :: pars_l, pars_p ! potential parameters
 
 
-    character(len=100) :: confname_file
+    character(len=200) :: confname_file
     character(len= 7) :: confname
     integer :: n_confs = 1          ! Number of configurations to read in
     integer :: conf_nr = 1          ! number in name of configurational file to read in.
@@ -89,6 +89,7 @@ module md_init
     integer :: max_iterations = 10 ! maximum number of iterations
     integer, dimension(3) :: celldim=(/2,2,4/)  ! input cell structure
     character(len=4) :: fitnum      ! number of fit
+    integer, dimension(2) :: fracaimd ! number of energy grid and aimd data points
 
     ! Annealing
     real(8) :: Tmin, Tmax
@@ -108,8 +109,8 @@ subroutine simbox_init(slab, teil)
 
     type(atoms), intent(out) :: slab, teil   ! hold r, v and f for atoms in the box
 
-    character(len=80) :: pos_init_file
-    character(len=100) :: buffer, biffer, label, mdpa_name_p,mdpa_name_l
+    character(len=200) :: pos_init_file
+    character(len=200) :: buffer, biffer, label, mdpa_name_p,mdpa_name_l
     character(len=7) :: celln
 !    character(len= 1) :: coord_sys
 
@@ -125,7 +126,6 @@ subroutine simbox_init(slab, teil)
 
     real(8), dimension(:,:), allocatable :: start_l
     real(8) :: de_aimd_max
-    integer, dimension(2) :: fracaimd
     integer, dimension(:), allocatable :: nr_at_layer
 
     logical :: exists
@@ -185,6 +185,7 @@ call random_seed(size=randk)
             case ('projectile')
                 read(buffer, *, iostat=ios) name_p, mass_p, npars_p, &
                                             key_p, mdpa_name_p, n_p0
+                                            
                 md_algo_p_key = .true.
                 mass_p=mass_p*amu2mass
                 call lower_case(mdpa_name_p)
@@ -451,11 +452,13 @@ a_lat = c_matrix(1,1)/celldim(1)*sqrt2
 !------------------------------------------------------------------------------
 !           Construct simulation cell matrix and its inverse
 !------------------------------------------------------------------------------
+
 d_matrix = 0.0d0
-d_matrix(1,1) = 1.0d0/c_matrix(1,1)
-d_matrix(2,2) = 1.0d0/c_matrix(2,2)
+d_matrix(1,1) = c_matrix(2,2) / (c_matrix(1,1)*c_matrix(2,2) - c_matrix(1,2)*c_matrix(2,1))
+d_matrix(2,2) = c_matrix(1,1) / (c_matrix(1,1)*c_matrix(2,2) - c_matrix(1,2)*c_matrix(2,1))
 d_matrix(3,3) = 1.0d0/c_matrix(3,3)
-d_matrix(1,2) = -d_matrix(2,2)*c_matrix(1,2)*d_matrix(1,1)
+d_matrix(1,2) = c_matrix(1,2) / (c_matrix(1,2)*c_matrix(2,1) - c_matrix(1,1)*c_matrix(2,2))
+d_matrix(2,1) = c_matrix(2,1) / (c_matrix(1,2)*c_matrix(2,1) - c_matrix(1,1)*c_matrix(2,2))
 
 ! Size of cell-matrix changes if slab repeated with rep
 cell_mat = 0.0d0

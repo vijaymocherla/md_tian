@@ -48,8 +48,10 @@ contains
         real(8)               :: rs = 100                ! inital step bound (keep fixed at 100)
         real(8)               :: r1, r2                  ! initial and final residuals
         type(handle_tr)       :: handle                  ! tr-solver handle
+        integer               :: counter=0               ! work-around variable for a rare bug
         real(8), dimension(:), allocatable   :: LW, UP   ! lower and upper bounds
         real(8), dimension(:,:), allocatable :: fjac     ! jacobi matrix
+        
 
         N      = 14 - NARRAY(4) ! N: number of fit variables to be fitted
         M      = NARRAY(1) - 1  ! M: number of energy data points - one reference energy
@@ -61,7 +63,7 @@ contains
             return                                       ! If so, return to parent.
         end if
 
-        allocate(fvec(M), Xpoints(M+1, 3, natoms), DFT_ref(M+1), X(N))
+        allocate(fvec(M+1), Xpoints(M+1, 3, natoms), DFT_ref(M+1), X(N))
         allocate(LW(N), UP(N), fjac(M,N), held_constant(NARRAY(4)))
 
         ! put configurations and reference energies in objective function's scope
@@ -106,6 +108,13 @@ contains
 	            LW(j) = 0.0
                     UP(j) = X(j) + abs(0.4*X(j))  
                 end if
+                
+                ! restrict V0_H
+                if (i .eq. 5) then
+                    LW(j) = 0.5 * 0.427d0
+                    UP(j) = 1.5 * 0.427d0
+                end if
+                
                 j = j + 1
             end if
         end do
@@ -165,6 +174,7 @@ contains
             !            print *, 'X', X
             !            print *, 'pars_l', pars_l
             !            print *, 'pars_p', pars_p
+            
             IF (DTRNLSPBC_SOLVE (handle, fvec, fjac, rci_request) /= TR_SUCCESS) THEN
                 !!!!IF FUNCTION DOES NOT COMPLETE SUCCESSFULLY THEN print ERROR MESSAGE
                 print *, '| ERROR IN DTRNLSPBC_SOLVE'
@@ -172,6 +182,22 @@ contains
                 call mkl_free_buffers
                 STOP
             ENDIF
+            
+            ! introducing counter variable for infinite loop detection that rarely occurs
+            if (rci_request.eq.0) then
+                counter = counter + 1
+            endif
+            
+            ! routine sometimes gets stuck if maximum number of iteration is reached
+            ! iter1 is parameter passed in via NARRAY(8)
+            ! iter  is counter for step displayed in stdout
+            ! feel free to comment out and solve the bug yourself :)
+            !if (iter.ge.iter1.and.rci_request_b4_solve.eq.0.and.rci_request.eq.1) then
+            if (counter.ge.(iter1+20)) then
+	    !  the algorithm has exceeded the maximal number of iterations
+	        print *, "[ERROR]: dtrnlspbc.f90 failed. No fitting done. Change maxit parameter."
+	        stop
+	    endif
 
             !            print *, 'X', X
             !            print *, 'pars_l', pars_l
@@ -179,8 +205,9 @@ contains
             !            print *, 'X after solve', X
             !        write(*,*) 'fjac', fjac
             !!!!rci_request IN/OUT: RETURN NUMBER THAT DENOTES NEXT STEP FOR PERFORMING
-            !!!!ACCORDING TO rci_request VALUE WE DO NEXT STEP
+            !!!!ACCORDING TO rci_request VALUE WE DO NEXT STEPt
             SELECT CASE (rci_request)
+		
                 CASE (-1, -2, -3, -4, -5, -6)
                     !!!!STOP RCI CYCLE
                     SUCCESSFUL = 1
@@ -224,9 +251,10 @@ contains
                     !                    print *, 'jacobi mat', fjac(1:M,1)
                     !                    print *, 'fvec', fvec
                     !                    print *, 'X after jacobi', X
-                    do i=1,M+1
-                        if ((mod(i,10) .eq. 0) .or. (i .eq. M+1)) then
-                            write(*,"(2i6, 2f12.4, 7f6.2 / 36x,7f6.2)") iter, i, DFT_ref(i), DFT_ref(i)-fvec(i), pars_p, pars_l
+                    ! first DFT reference is not printed b/c this is reference value
+                    do i=1,M
+                        if ((mod(i,10) .eq. 0) .or. (i .eq. M)) then
+                            write(*,"(2i6, 2f12.4, 7f6.2 / 36x,7f6.2)") iter, i, DFT_ref(i+1), DFT_ref(i+1)-fvec(i), pars_p, pars_l
                         end if
                     end do
                     iter = iter+1
