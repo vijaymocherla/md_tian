@@ -80,16 +80,23 @@ module md_init
     integer :: conf_nr = 1          ! number in name of configurational file to read in.
 
     ! Fit stuctures or fit-related parameters
-    real(8), dimension(:,:,:), allocatable :: x_all
-    real(8), dimension(:),     allocatable :: y_all
-    real(8) :: evasp = -24.995689d0 ! A value for Au 2x2
-    integer, dimension(2) :: rep = (/0,0/)  ! number of repetition layers
-    integer :: ipc ! number of parameters to be held constant during fit
-    integer, dimension(20) :: ibt = 0 ! Integer Array containing the subscripts of parameters to be held constant.
-    integer :: max_iterations = 10 ! maximum number of iterations
-    integer, dimension(3) :: celldim=(/2,2,4/)  ! input cell structure
-    character(len=4) :: fitnum      ! number of fit
-    integer, dimension(2) :: fracaimd ! number of energy grid and aimd data points
+    real(8), dimension(:,:,:), allocatable  :: x_all
+    real(8), dimension(:),     allocatable  :: y_all
+    real(8)                                 :: evasp = -24.995689d0 ! A value for Au 2x2
+    integer, dimension(2)                   :: rep = (/0,0/)  ! number of repetition layers
+    integer                                 :: ipc ! number of parameters to be held constant during fit
+    integer, dimension(20)                  :: ibt = 0 ! Integer Array containing the subscripts of parameters to be held constant.
+    integer                                 :: max_iterations = 10 ! maximum number of iterations
+    integer, dimension(3)                   :: celldim=(/2,2,4/)  ! input cell structure
+    character(len=4)                        :: fitnum      ! number of fit
+    integer, dimension(2)                   :: fracaimd ! number of energy grid and aimd data points
+    character(len=3),dimension(:), allocatable :: trajname  ! names of AIMD trajectories
+    integer                                 :: nsites = 0, trajn = 0
+    integer, dimension(:), allocatable      :: ssites   ! names of sites that are to be included
+    real(8), dimension(2)                   :: dftlu = (/-20.0d0,20.0d0/)   ! upper and lower limit in (eV) for included 3Dgrid-points
+    real(8), dimension(2)                   :: aimdlu = (/-20.0d0,20.0d0/)   ! upper and lower limit in (eV) included AIMD-points
+    real(8), dimension(2)                   :: distmima = (/0.0d0,20.0d0/)   ! minimal distance of H-atom to surface atoms and maximal
+                                                                            ! distance to surface atoms
 
     ! Annealing
     real(8) :: Tmin, Tmax
@@ -125,7 +132,6 @@ subroutine simbox_init(slab, teil)
     real(8), dimension(3,3) :: c_matrix
 
     real(8), dimension(:,:), allocatable :: start_l
-    real(8) :: de_aimd_max
     integer, dimension(:), allocatable :: nr_at_layer
 
     logical :: exists
@@ -138,6 +144,11 @@ subroutine simbox_init(slab, teil)
 
 ! size of seed for random number generator
 call random_seed(size=randk)
+
+! set a few defaults
+dftlu=(/-e_max,e_max/)
+aimdlu=(/-e_max,e_max/)
+distmima=(/0.0d0,7.0d0/)
 
 !------------------------------------------------------------------------------
 !                       READ IN INPUT FILE
@@ -185,7 +196,7 @@ call random_seed(size=randk)
             case ('projectile')
                 read(buffer, *, iostat=ios) name_p, mass_p, npars_p, &
                                             key_p, mdpa_name_p, n_p0
-                                            
+
                 md_algo_p_key = .true.
                 mass_p=mass_p*amu2mass
                 call lower_case(mdpa_name_p)
@@ -352,16 +363,34 @@ call random_seed(size=randk)
                 call lower_case(confname)
             case ('evasp')
                 read(buffer, *, iostat=ios) evasp
-            case ('aimd')
-                read(buffer, *, iostat=ios) fracaimd, de_aimd_max
             case ('fitconst')
                 read(buffer, *, iostat=ios) ipc, (ibt(i), i=1,ipc)
             case ('maxit')
                 read(buffer, *, iostat=ios) max_iterations
             case('anneal')
                 read(buffer, *, iostat=ios) Tmax, sasteps
+             case('trajname')
+                read(buffer,*,iostat=ios) trajn
+                pos1 = scan(buffer, ' ')
+                buffer = buffer(pos1+1:)
+                allocate(trajname(trajn))
+                read(buffer, *, iostat=ios) trajname
+            case('fitmix')
+                read(buffer,*,iostat=ios) fracaimd
             case default
                 print *, 'Skipping invalid label at line', line, label
+            case('3Dgrid')
+                read(buffer,*,iostat=ios) dftlu, nsites
+                allocate(ssites(nsites))
+                pos1 = scan(buffer, ' ')
+                buffer = buffer(pos1+1:)
+                pos1 = scan(buffer, ' ')
+                buffer = buffer(pos1+1:)
+                pos1 = scan(buffer, ' ')
+                buffer = buffer(pos1+1:)
+                read(buffer, *, iostat=ios) ssites
+            case ('aimd')
+                read(buffer,*,iostat=ios) aimdlu, distmima
             end select
         end if
     end do ! ios
@@ -389,7 +418,7 @@ if (confname == 'poscar' .or. confname == 'fit') then
     call read_conf(nr_at_layer, nlnofix, nlno, n_p, n_l, n_p0, &
                    slab, teil, start_l, c_matrix)
 ! mxt
-else if (confname == 'mxt' .or. 'geo') then
+else if (confname == 'mxt' .or. confname =='geo') then
     call read_mxt(nspec, teil, slab, n_p0)
 end if
 if (confname == 'fit') then
@@ -556,7 +585,7 @@ subroutine prep_slab(n_l0, start_l, c_matrix, nr_at_layer, &
     !                       rep =(/2,2/)         5x5-1= 24
     !
     ! 2. 2*(rep(1)+1)x(2*rep(2)+1) - 1 new images are formed.
-    ! 3. Every layer is repeated independendly. That means layer can hold a
+    ! 3. Every layer is repeated independently. That means layer can hold a
     !    different number of atoms.
     ! 4. If rep is not given, then no repetition takes place.
     ! 5. Set velocities.
@@ -632,9 +661,9 @@ allocate(pos_l(3,n_l), vel_l(3,n_l))
 pos_l = matmul(c_matrix,d_l)
 
 ! Exclude fixed atoms
-if (nlno < 0 .and. allocated(nr_at_layer) == .false.) then
+if (nlno < 0 .and. allocated(nr_at_layer) .eqv. .false.) then
     nlnofix = n_l/celldim(3)*(celldim(3)+nlno)    ! lowest layer fixed
-else if (nlno < 0 .and. allocated(nr_at_layer) == .true.) then
+else if (nlno < 0 .and. allocated(nr_at_layer) .eqv. .true.) then
     ! calculate number of remaining atoms when lowest layer fixed
     nlnofix = n_l + nr_at_layer(celldim(3))*(2*rep(1)+1)*(2*rep(2)+1)*nlno
 else
@@ -800,7 +829,8 @@ subroutine read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
     !
 type(atoms) :: slab, teil
 
-integer :: exists, n_p, n_l, n_p0, n_l0
+integer :: n_p, n_l, n_p0, n_l0
+logical :: exists
 integer, dimension(2) :: fracaimd, npts, ea_fraction
 real(8) :: de_aimd_max
 real(8), dimension(3,3):: c_matrix
@@ -813,19 +843,27 @@ real(8), dimension(:,:), allocatable :: dfix, start_l
 real(8), dimension(:,:,:),allocatable :: x_eq, aimd_l, aimd_l1, aimd_p
 real(8), dimension(:,:,:),allocatable :: d_l3, d_p3, aimd_p1
 character(len=80) :: str, buffer
+!
+real(8), dimension(3) :: r3temp
+real(8) :: minr, maxr ! distance and counter for the largest/smallest distance
+real(8), dimension(:,:), allocatable :: cpaimd
 
 ! Check if Equilibrium-data exists.
 inquire(directory=trim(fit_dir),exist=exists)
 if (.not. exists) stop 'The folder with fit data does not exist.'
 npts = 0
 ! read in energies for Equilibrium positions
+! and select only those that correspond to the chosen sites
 if (fracaimd(1) > 0 ) then
     call open_for_read(39,trim(fit_dir)//fit_eq)
     i=1
     do
-        read(39,*,iostat=ios) rtemp, rtemp, rtemp, rtemp, rtemp
+        read(39,*,iostat=ios) itemp, rtemp, rtemp, rtemp, rtemp
         if(ios <0) exit
-        if (Abs(rtemp - evasp)<=e_max ) i=i+1
+        do j = 1, nsites
+            if ((rtemp - evasp)<=dftlu(2) .and. (rtemp - evasp)>=dftlu(1)&
+            .and. itemp == ssites(j)) i=i+1
+        end do
     end do
     npts(1) = i - 1
 
@@ -851,9 +889,11 @@ y_eq(1) = evasp
 if (fracaimd(1) > 0 ) then
     i=2
     do
-        read(39,*,iostat=ios) rtemp, empty3(1), empty3(2), empty3(3), rtemp
+        read(39,*,iostat=ios) itemp, empty3(1), empty3(2), empty3(3), rtemp
         if(ios <0) exit
-        if (Abs(rtemp - evasp)<=e_max ) then
+        do k = 1, nsites
+        if ((rtemp - evasp)<=dftlu(2) .and. (rtemp - evasp)>=dftlu(1)&
+            .and. itemp == ssites(k)) then
             y_eq(i) = rtemp
             do j = 1, n_p
                 x_eq(i,:,j) = teil%r(:,j) + empty3
@@ -861,6 +901,7 @@ if (fracaimd(1) > 0 ) then
             x_eq(i,:,n_p+1:n_p+n_l) = slab%r
             i = i + 1
         end if
+        end do
     end do
     close(39)
     ea_fraction(1) = npts(1)/fracaimd(1)
@@ -895,47 +936,64 @@ if (fracaimd(2) > 0 ) then
     npts(2) = i - 3
 
     allocate(E_dft2(npts(2)))
-    allocate(aimd_l1(npts(2),3,n_l0))
+    allocate(aimd_l1(npts(2),3,n_l0),cpaimd(3,n_l0+n_p0))
     allocate(dfix(3,n_l0))
     allocate(aimd_p1(npts(2),3,n_p0))
 
 ! Read in positions and energies together
     read(17,'(A)') buffer
-    read(17,*) rtemp, rtemp, E_dft2(1)
-    read(18,*) aimd_l1(1,:,:)
-    if (n_p0 > 0) read(18,*) aimd_p1(1,:,:)
+!    read(17,*) rtemp, rtemp, E_dft2(1)
+!    read(18,*) aimd_l1(1,:,:)
+!    if (n_p0 > 0) read(18,*) aimd_p1(1,:,:)
 
-    j=2
-    do i=2,npts(2)
+    j=1
+    do i=1,npts(2)
         read(17,*) rtemp, rtemp, E_dft2(j)
         read(18,*) aimd_l1(j,:,:)
-        if (n_p0 > 0) read(18,*) aimd_p1(j,:,:)
-        rtemp = E_dft2(j-1) - E_dft2(j)
-        if (abs(rtemp) >= de_aimd_max) j = j + 1
+
+        if (n_p0 > 0) then
+            read(18,*) aimd_p1(j,:,:)
+            cpaimd(:,1:n_l0) = aimd_l1(j,:,:)
+            cpaimd(:,n_l0+1:n_l0+n_p0) = aimd_p1(j,:,:)
+            ! Calculate smallest distance to Au-atoms
+            r=1000.d0
+            minr=1000.d0
+            maxr=-1000.d0
+            cpaimd = matmul(cell_mat,cpaimd(:,:))
+!            print *, cpaimd(3,1)- cpaimd(3,17)
+            do k=1,n_p0
+            do l=1,n_l0
+                r3temp= cpaimd(:,l)-cpaimd(:,n_l0+k)
+                r3temp = matmul(cell_imat, r3temp)   ! transform to direct coordinates
+                r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
+                r3temp(2) = r3temp(2) - Anint(r3temp(2))
+                r3temp(3) = r3temp(3) - Anint(r3temp(3))
+                r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
+
+                r =  sqrt(sum(r3temp*r3temp))               ! distance
+                if (r < minr) minr = r
+                if(l==1) maxr = -r3temp(3)
+            end do
+            end do
+        end if
+
+        if((E_dft2(j) - evasp)<=aimdlu(2) .and. (E_dft2(j) - evasp)>=aimdlu(1)&
+            .and. maxr < distmima(2) .and. minr > distmima(1)) then
+            j = j + 1
+        end if
+
     end do
     npts(2) = j - 1
 
-! Exclude points which are above the energy specified for e_max_aimd value
-! First: See which points do not lie below the cut-off-energy
-j=0
-do i= 1, npts(2)
-    if (Abs(E_dft2(i) - evasp)<=e_max_aimd ) j=j+1
-!    if ((E_dft2(i) - evasp)<=e_max_aimd ) j=j+1
-end do
-q=npts(2)
-npts(2) = j
-
-! Second: build new arrays that only include the atoms below the cut-off-energy
+! The procedure above might have excluded some of the points from the trajectories;
+! Therefore, new arrays now have to be allocated that have the correct length and
+! contain no empty spots
 allocate(E_dft1(npts(2)),aimd_l(npts(2),3,n_l0),aimd_p(npts(2),3,n_p0))
-j=0
-do i=1,q
-    if (Abs(E_dft2(i) - evasp)<=e_max_aimd ) then
-!    if ((E_dft2(i) - evasp)<=e_max_aimd ) then
-        j = j+1
-        E_dft1(j)=E_dft2(i)
-        aimd_l(j,:,:) = aimd_l1(i,:,:)
-        aimd_p(j,:,:) = aimd_p1(i,:,:)
-    end if
+
+do i=1,npts(2)
+        E_dft1(i)=E_dft2(i)
+        aimd_l(i,:,:) = aimd_l1(i,:,:)
+        aimd_p(i,:,:) = aimd_p1(i,:,:)
 end do
 deallocate(E_dft2,aimd_l1,aimd_p1)
 
@@ -960,7 +1018,7 @@ deallocate(E_dft2,aimd_l1,aimd_p1)
     itemp=celldim(1)*celldim(2)
     allocate(d_l3(npts(2),3,n_l))
 
-    ! Replication. We asume that the AIMD-trajectories always have the same
+    ! Replication. We assume that the AIMD-trajectories always have the same
     ! Number of atoms per layer.
     do q = 1,npts(2)
         i = 1
@@ -1204,7 +1262,7 @@ subroutine particle_init(s)
         end select
     end if
 
-    if (pip_sign .ne. -1 .or. 3) then
+    if (pip_sign .ne. -1 .or. pip_sign .ne. 3) then
     !     Assign projectile velocities
         vinc = sqrt(2.0d0*einc/mass_p)
         s%v(1,:) =  vinc*sin(inclination)*cos(azimuth)

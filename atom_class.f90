@@ -25,13 +25,14 @@ module atom_class
     real(8), parameter          :: e_max    = 20.0d0
     real(8), parameter          :: e_max_aimd= 100.0d0 ! cut-off for fitting aimd-input-data-set
     real(8), parameter          :: cutoff   = 1.50d0 ! Cut-off for energy calculations
+    real(8)                     :: de_aimd_max = 0.0d0 ! maximal energy difference between AIMD points
 
     character(len=80), parameter:: fit_dir    = 'fitdata/'
     character(len=80), parameter:: fit_eq     = 'energy_eq.dat'
     character(len=80), parameter:: aimd_pos   = 'XDATCAR.dat'
     character(len=80), parameter:: aimd_e     = 'analyse.dat'
-    character(len=80), parameter:: parsname(7)= (/'eta2=','n0=','E0=',&
-                                                'lambda=','V0=','kappa=','s0='/)
+    character(len=80), parameter:: parsname(7)= (/'eta2=  ','n0=    ','E0=    ',&
+                                                'lambda=','V0=    ','kappa= ','s0=    '/)
 
     ! geometrical factor for fcc metals
     ! beta = (16 Pi / 3)^(1/3)/Sqrt(2)
@@ -61,6 +62,7 @@ module atom_class
     real(8), parameter          :: amu2mass = 103.6382d0
     real(8), parameter          :: deg2rad  = pi/180.0d0
     real(8), parameter          :: bohr2ang = 0.529177211d0
+    real(8), parameter          :: p2GPa    = 160.2176565d0
 
     !  Type atoms
     !   structure to hold the position, velocity, force etc. for multiple atoms

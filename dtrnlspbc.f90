@@ -51,7 +51,7 @@ contains
         integer               :: counter=0               ! work-around variable for a rare bug
         real(8), dimension(:), allocatable   :: LW, UP   ! lower and upper bounds
         real(8), dimension(:,:), allocatable :: fjac     ! jacobi matrix
-        
+
 
         N      = 14 - NARRAY(4) ! N: number of fit variables to be fitted
         M      = NARRAY(1) - 1  ! M: number of energy data points - one reference energy
@@ -84,7 +84,7 @@ contains
         iter2     = 100       ! set max number of trial-step iterations
         jac_eps   = 1.D-8     ! set jacobi precision
 
-        
+
         j = 1
         do i=1, 14
             if (all(held_constant .ne. i)) then
@@ -99,22 +99,22 @@ contains
                     print *, 'Parameter problem in dtrnlspbc.f90'
                     stop
                 end if
-                
+
                 ! set bounds
                 if (i .eq. 3 .or. i .eq. 10) then
                     LW(j) = X(j) - abs(0.4*X(j))
 	            UP(j) = 0.0
 	        else
 	            LW(j) = 0.0
-                    UP(j) = X(j) + abs(0.4*X(j))  
+                    UP(j) = X(j) + abs(0.4*X(j))
                 end if
-                
+
                 ! restrict V0_H
                 if (i .eq. 5) then
                     LW(j) = 0.5 * 0.427d0
                     UP(j) = 1.5 * 0.427d0
                 end if
-                
+
                 j = j + 1
             end if
         end do
@@ -174,7 +174,7 @@ contains
             !            print *, 'X', X
             !            print *, 'pars_l', pars_l
             !            print *, 'pars_p', pars_p
-            
+
             IF (DTRNLSPBC_SOLVE (handle, fvec, fjac, rci_request) /= TR_SUCCESS) THEN
                 !!!!IF FUNCTION DOES NOT COMPLETE SUCCESSFULLY THEN print ERROR MESSAGE
                 print *, '| ERROR IN DTRNLSPBC_SOLVE'
@@ -182,12 +182,12 @@ contains
                 call mkl_free_buffers
                 STOP
             ENDIF
-            
+
             ! introducing counter variable for infinite loop detection that rarely occurs
             if (rci_request.eq.0) then
                 counter = counter + 1
             endif
-            
+
             ! routine sometimes gets stuck if maximum number of iteration is reached
             ! iter1 is parameter passed in via NARRAY(8)
             ! iter  is counter for step displayed in stdout
@@ -207,7 +207,7 @@ contains
             !!!!rci_request IN/OUT: RETURN NUMBER THAT DENOTES NEXT STEP FOR PERFORMING
             !!!!ACCORDING TO rci_request VALUE WE DO NEXT STEPt
             SELECT CASE (rci_request)
-		
+
                 CASE (-1, -2, -3, -4, -5, -6)
                     !!!!STOP RCI CYCLE
                     SUCCESSFUL = 1
