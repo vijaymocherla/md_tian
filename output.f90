@@ -109,7 +109,11 @@ subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbou
     write(753,'(A14,f15.5)') 'E_kin_p (eV) = ', Ekin_p
     write(753,'(A14,f15.5)') 'E_kin_l (eV) = ', Ekin_l
     write(753,'(A14,f15.5)') 'E_pot   (eV) = ', Epot
-    write(753,'(A14,f15.5)') 'E_pef   (eV) = ', pEfric
+    if (md_algo_p == 5) then
+        write(753,'(A14,f15.5)') 'E_pef   (eV) = ', pEfric
+    elseif (md_algo_p == 3 .or. md_algo_p == 4) then
+        write(753,'(A14,f15.5)') 'E_phonon   (eV) = ', pEfric
+    end if
     write(753,'(A14,f15.5)') 'E_ref   (eV) = ', Eref
     write(753,'(A14,f15.5)') 'E_total (eV) = ', Epot + Ekin_l + Ekin_p
     write(753,'(A8)')'r_p (A):'
@@ -323,19 +327,20 @@ subroutine out_posvel(slab, teil, itraj, Eref) !mxt_rv.dat
     real(8) :: Eref
     integer :: ios, itraj
     character(len=8) str
-    character(len=90) filename,buffer
+    character(len=90) filename, buffer
     character(len=80) sys
 
     write(str,'(I8.8)') save_counter
 
-    !filename = 'conf/mxt_rv'//str//'.dat'
-    sys = 'pwd > filename.txt'
-    call system(sys)
-    call open_for_read(33,'filename.txt')
-    read(33,'(A)',iostat=ios) buffer
-    close(33)
-    filename = trim(buffer)//'/conf/mxt_rv'//str//'.dat'
-
+    filename = 'conf/mxt_rv'//str//'.dat'
+!    sys = 'pwd > filename.txt'
+!    call system(sys)
+!    call open_for_read(33,'filename.txt')
+!    read(33,'(A)',iostat=ios) buffer
+!    close(33)
+!    filename = trim(buffer)//'/conf/mxt_rv'//str//'.dat'
+!    print *, filename
+    
     open (753,file=filename, status='replace', &
                     action='write', iostat=ios)
 

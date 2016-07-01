@@ -1,11 +1,12 @@
-start 1
+start 10
 ntrajs 1
-Tsurf 0
+Tsurf 700
 step 1
-nsteps 10001
-wstep -3 1
-lattice   Au 196.96657 7 emt515_Au.nml ver -1
+nsteps 1001
+wwstep 50000 1
+wstep 0 1
+lattice   Au 196.96657 7 emt_stroem_Au.nml ver -1
 pes emt
-celldim 2 2 6 none
+celldim 2 2 4 none
 rep 1 1
-conf POSCAR '/home/sjanke/git/md_tian/au111_2x2x6.POSCAR'
+conf POSCAR '/home/sjanke/git/md_tian/au111_2x2x4.POSCAR'

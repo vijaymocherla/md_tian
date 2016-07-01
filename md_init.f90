@@ -48,15 +48,15 @@ module md_init
                                     !           Reconsider
     real(8) :: height = 6.0d0       ! Read-in height projectile
     real(8) :: Epot = 0.0d0
-    real(8) :: pEfric = 0.0d0       ! electronic friction accumulator for md_algo_p == 5
+    real(8), allocatable, dimension(:)      :: pEfric != 0.0d0       ! electronic friction accumulator for md_algo_p == 5, needs to have the same
     real(8) :: a_lat                ! lattice constant
     real(8),dimension(3,3) :: cell_mat, cell_imat ! simulation cell matrix and its inverse
 
-    character(len=200) :: name_l, key_l
+    character(len=80) :: name_l, key_l
     character(len=80) :: name_p = 'Elerium'
     character(len=80) :: key_p_pos = 'top'
     character(len=80) :: pes_name = 'emt'
-    character(len=200) :: key_p = 'empty'
+    character(len=80) :: key_p = 'empty'
     integer :: npars_l ! number of parameters for lattice
     integer :: npars_p = 0
     integer :: np_atoms, nl_atoms
@@ -74,7 +74,7 @@ module md_init
     real(8), dimension(:), allocatable   :: pars_l, pars_p ! potential parameters
 
 
-    character(len=200) :: confname_file
+    character(len=100) :: confname_file
     character(len= 7) :: confname
     integer :: n_confs = 1          ! Number of configurations to read in
     integer :: conf_nr = 1          ! number in name of configurational file to read in.
@@ -418,14 +418,12 @@ if (confname == 'poscar' .or. confname == 'fit') then
     call read_conf(nr_at_layer, nlnofix, nlno, n_p, n_l, n_p0, &
                    slab, teil, start_l, c_matrix)
 ! mxt
-else if (confname == 'mxt' .or. confname =='geo') then
+else if (confname == 'mxt' .or. confname == 'geo') then
     call read_mxt(nspec, teil, slab, n_p0)
 end if
 if (confname == 'fit') then
     call read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
                     de_aimd_max, start_l, c_matrix)
-    ! Calculate the distance each AIMD-atom has to its equilibrium position
-    !call distance(c_matrix, n_l,n_confs)
 end if
 
 if (sasteps > 0) then
@@ -623,7 +621,7 @@ d_l = 0.0d0
 i = 1
 itemp = 0
 if (rep(1) > 0 .or. rep(2) > 0 ) then
-if (allocated(nr_at_layer) .eqv. .true.) then
+if (allocated(nr_at_layer) == .true.) then
     itemp2 = 1
     do l = 1, celldim(3)
         do j = -rep(1), rep(1)
@@ -637,7 +635,7 @@ if (allocated(nr_at_layer) .eqv. .true.) then
         end do
         itemp2 = itemp2+nr_at_layer(l)
     end do
-else if (allocated(nr_at_layer) .eqv. .false.) then
+else if (allocated(nr_at_layer) == .false.) then
 
     itemp=celldim(1)*celldim(2)
     i = 1
@@ -1313,74 +1311,6 @@ end do
 
 
 end subroutine neighbour_list
-
-subroutine distance(c_matrix, n_l, n_confs)
-    !
-    ! Purpose:
-    !           Calculate the deviation of all atoms from AIMD to their equilibrium positions.
-    !
-    integer, parameter :: at =1
-
-    real(8), dimension(3,3):: c_matrix
-    integer :: n_l,n_confs
-
-    character(len=3) :: str
-    integer :: i,q,j
-    integer, dimension(3)   :: nconf
-    integer, dimension(at)  :: nat ! number of the atom in the array
-    real(8), dimension(at)  :: mean
-    real(8)                 :: norm
-    real(8), dimension(:,:), allocatable :: shortest
-
-
-write(str,'(I3.3)') n_confs
-call open_for_write(87,'shortest_distance_HtoAu_all'//trim(str)//'.dat')
-write(87,*) 'Shortest distance of each atom during an AIMD traj to its perfect',&
-            'fcc surface positions (in Angstroem)'
-
-nconf=shape(x_all)
-allocate(shortest(nconf(1),at))
-shortest = 10000.0d0
-mean = 0.0d0
-j=at
-
-! need periodic boundary conditions.
-do q = 2, nconf(1) ! loop over the steps
-    do i = 10, n_l+9  ! to which Au atom is H closest?
-!        call pbc_dist(x_all(q,:,5), x_all(q,:,i), cell_mat, cell_imat, norm)
-        if (x_all(q,3,5)>6.5) x_all(q,3,5)=x_all(q,3,5)-cell_mat(3,3)
-        norm = sqrt((x_all(q,1,5)-x_all(q,1,i))**2+&
-                    (x_all(q,2,5)-x_all(q,2,i))**2+&
-                    (x_all(q,3,5)-x_all(q,3,i))**2)
-        if (norm < shortest(q,j)) shortest(q,j) = norm
-    end do
-!    print *, shortest(q,1)
-    mean(j) = mean(j) + shortest(q,j)
-    write(87,'(f12.5)') shortest(q,1)
-end do
-close(87)
-stop
-! For Au-atoms. not necessary
-!nat = (/26,27,28,29,62,63,64,65,98,99,100,101/)
-!do q = 2, nconf(1) ! loop over the steps
-!    do j = 1, at   ! loop over atoms
-!        do i = 10, n_l+9  ! to which atom is j closest?
-!            norm = sqrt((x_all(q,1,nat(j))-x_all(1,1,i))**2+&
-!                        (x_all(q,2,nat(j))-x_all(1,2,i))**2+&
-!                        (x_all(q,3,nat(j))-x_all(1,3,i))**2)
-!            if (norm < shortest(q,j)) shortest(q,j) = norm
-!        end do
-!        mean(j) = mean(j) + shortest(q,j)
-!    end do
-!    write(87,'(12f12.5)') shortest(q,1),shortest(q,2),shortest(q,3),shortest(q,4),&
-!                      shortest(q,5),shortest(q,6),shortest(q,7),shortest(q,8),&
-!                      shortest(q,9),shortest(q,10),shortest(q,11),&
-!                      shortest(q,12)
-!end do
-!close(87)
-
-stop
-end subroutine distance
 
 end module md_init
 

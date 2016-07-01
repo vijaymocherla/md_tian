@@ -198,8 +198,8 @@ subroutine fit(slab, teil)
     mm=20
     ! Calculate minimum bond length
     ! and energy won/lost by abstracting Au-atom and forming H-Au
-    do q=0,200
-        leng = 1.0d0+ q/100.0d0
+    do q=0,590
+        leng = 0.1d0+ q/100.0d0
         blen(3,18) =  6.0d0+ leng
         call emt_e_fit(blen,Epot1)
         if (mm>Epot1-Epot) then

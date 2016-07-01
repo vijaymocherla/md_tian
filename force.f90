@@ -1882,7 +1882,7 @@ subroutine emt_dens_fit(xdata, energy,pdens)
 ! is usually larger for them.
     !a_lat = 4.2010d0
     rcut = betas0_l * sqrt3
-    rcut = a_lat * sqrt3 * isqrt2
+    !rcut = a_lat * sqrt3 * isqrt2
     rr = 4.0d0 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
 
@@ -2819,6 +2819,13 @@ subroutine ldfa(s,imass)
     end do
     ! xi in 1/fs
     s%dens = s%dens*convert*imass / hbar
+    
+    ! For simulated annealing, the Langevin dynamics are used as a heat bath
+    ! But using the Au-atomic densities is too inefficient, so in this case
+    ! a friction coefficient is set that is of the order of magnitude of
+    ! the friction an H-atom experiences when running through Au.
+    ! The friction coefficient is now 0.003 1/fs.
+    if (sasteps > 0) s%dens = 0.003d0 !0.000015231d0/(imass*convert)
 
 end subroutine ldfa
 

@@ -28,9 +28,10 @@ real(8), dimension(:,:,:), allocatable :: rbounce           ! lowest particle po
 real(8), dimension(:,:), allocatable :: tock                ! collection array for momentum
 integer, dimension(:), allocatable   :: col_start, col_end  ! collision time
 integer, dimension(:), allocatable   :: imp, q_imp          ! collision number
-logical :: exit_key, imp_switch
-real(8), dimension(:), allocatable :: eed, eed_prec         ! embedded electron density for projectile
-real(8) :: Eref, leng,mm, no                                            ! reference energy
+logical :: exit_key, imp_switch, min_switch
+real(8), dimension(:), allocatable :: eed, eed_prec         ! embedded electron density for projectile for bounce count
+real(8), dimension(:), allocatable :: densmin, densmax      ! embedded electron density for projectile for bounce count
+real(8) :: Eref, leng, mm, no                               ! reference energy
 
 !timing
 !real(8) :: start, fin
@@ -54,7 +55,9 @@ ndata= 4 + 7*teil%n_atoms ! Epot, Ekinl, Ekinp, density, r, v
 allocate(output_info(ndata,nwrites))
 allocate(tock(3,teil%n_atoms))
 allocate(imp(teil%n_atoms), q_imp(teil%n_atoms))
-allocate(eed(teil%n_atoms),eed_prec(teil%n_atoms))
+allocate(eed(teil%n_atoms),eed_prec(teil%n_atoms),densmin(teil%n_atoms))
+allocate(densmax(teil%n_atoms))
+allocate(pEfric(teil%n_atoms))
 
 !------------------------------------------------------------------------------
 !
@@ -80,43 +83,7 @@ if (confname == 'poscar') then
     end if
     Eref = Epot
     print *, 'Eref = ', Eref
-!    stop
-    print *, slab%n_atoms
-    call open_for_write(14,'trial.dat')
-    write(14,'(3f15.10)') cell_mat
-    write(14,*) slab%n_atoms
-    write(14,'(3f15.10)') slab%r
-!    write(14,'(3f15.10)') teil%r
-    close(14)
-!    print *, slab%n_atoms
-    stop
 end if
-
-!!Check how much energy won by forming H-Au to vacuum
-!! For that, the equilibrium bond-length of the H-Au molecule also has to be calculated
-!mm=20
-!do i=0,1! 200
-!    leng = 1.0d0+ i/100.0d0
-!    teil%r(:,1) = (/0.0d0, 0.0d0, 6.0d0/)
-!    slab%r(:,17) = (/0.0d0, 0.0d0, 6.0d0+ 1.43 /)
-!    ! 1.524 is the literature value for the Au-H bondlength (CRC)
-!    ! 1.59 is the value we've been using so far. If you want to stay with the old way
-!    ! of analysing the H-Au formation energy, you should be using the following line
-!    ! instead of the above one:
-!    ! slab%r(:,17) = (/0.0d0, 0.0d0, 6.0d0+ 1.59d0 /)
-!    call emt_e(slab,teil)
-!    !print *, Epot1, Epot-Eref
-!    if (mm>Epot-Eref) then
-!        mm=Epot-Eref
-!        no = leng
-!    end if
-!end do
-!call open_for_append(14,'Au_H_dist_minE.dat')
-!!write(14,'(A5,15f15.5)') key_l(12:15),no, mm
-!print *, key_l(12:15),no, mm
-!close(14)
-!stop
-
 
 if (confname == 'fit') then
     call fit(slab,teil)
@@ -146,6 +113,7 @@ do itraj = start_tr, ntrajs+start_tr-1
 
     exit_key    = .false.
     imp_switch  = .false.
+    min_switch  = .false.
     overwrite   = .true.
     rmin_p      = 6.10d0
     col_start   = 0
@@ -154,7 +122,10 @@ do itraj = start_tr, ntrajs+start_tr-1
     ndata       = 0
     imp         = 0
     q_imp       = 0
-    eed_prec     = 0.0d0
+    eed_prec    = 0.0d0
+    densmin     = 1.0d0
+    densmax     = 10.0d0
+    pEfric      = 0.0d0
 
 ! Skip initialisation routine for Annealing after 1st trajectory
     if ((sasteps > 0) .and. (itraj > 1)) then
@@ -173,7 +144,7 @@ do itraj = start_tr, ntrajs+start_tr-1
     !                call  lj(slab,teil)
             end select
             if (md_algo_p == 3 .or. md_algo_p == 4 &
-                .or. md_algo_p == 5) call ldfa(teil,imass_p)
+                .or. md_algo_p == 5) call ldfa(teil, imass_p)
             teil%a  = teil%f*imass_p
             teil%ao = teil%a
             teil%au = teil%ao
@@ -230,15 +201,25 @@ do itraj = start_tr, ntrajs+start_tr-1
         call propagator_1(slab, md_algo_l, imass_l)         ! slab kick-drift
 
         if (teil%n_atoms > 0) then
-           call propagator_1(teil, md_algo_p, imass_p)     ! projectile kick-drift
-           select case (pes_key)                           ! slab-projectile forces
-               case (0)
-                   call emt(slab,teil)
-               case (1)
+	    call propagator_1(teil, md_algo_p, imass_p)     ! projectile kick-drift
+	    select case (pes_key)                           ! slab-projectile forces
+		case (0)
+		    call emt(slab,teil)
+		case (1)
 !                   call  lj(slab,teil)
-           end select
-           eed = teil%dens                                 ! keep eed values
-           call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
+	    end select
+	    eed = teil%dens                                 ! keep eed values
+	    call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
+
+            ! collect only contribution due to adiabatic effects
+            ! to be able to tell how much goes into ehp and phonons
+            if (md_algo_p == 3 .or. md_algo_p == 4 ) then
+            do i = 1, teil%n_atoms
+                pEfric(i) = pEfric(i) + (teil%f(1,i)*teil%v(1,i) + &
+                            teil%f(2,i)*teil%v(2,i) + &
+                            teil%f(3,i)*teil%v(3,i))* step
+            end do
+            end if
         else
             select case (pes_key)                          ! slab forces
                 case (0)
@@ -260,19 +241,43 @@ do itraj = start_tr, ntrajs+start_tr-1
                 if (teil%r(3,i) < rmin_p(3,i)) rmin_p(:,i) = teil%r(:,i)
 
                 ! Collision time
-                if (teil%r(3,i) < 2.0d0) then
+                ! When particle is closer to surface than 3 AA
+                if (teil%r(3,i) < 3.0d0) then
                     if (col_start(i) == 0) col_start(i) = q
                     col_end(i) = q
                 end if
                 ! Collision number. Criterium:
                 ! embedded projectile electron density has maximum
+
+                ! 1. find maximum in background electron density
+                ! 2. is maximum at least 0.025 AA^(-3) above previous minimum?
+                ! 3. if maximum is not at least 0.025 above following minimum, disregard
+
+                ! Calculate density of minimum
+                if (eed(i) < densmin(i)) then
+                    densmin(i)=eed(i)
+                elseif (eed(i)>densmin(i) .and. densmax(i)-densmin(i)<0.025d0 .and.&
+                    min_switch) then
+                    ! if the minimum passed, was it much deeper than the last maximum?
+                    ! For if it wasn't, that maximum should not count.
+                    imp(i)= imp(i)-1
+                    min_switch = .false.
+                end if
                 if (eed(i) > eed_prec(i))  then
                     imp_switch = .true.
-                else if (imp_switch .and. q > q_imp(i) + step_imp .and. eed(i)>0.25d0) then
+                    ! Shouldn't we rather write the recording of the jump position here and
+                    ! just make sure it is always one higher than imp(i), so it will potentially
+                    ! record the position of the next bounce?
+                else if (imp_switch .and. q > q_imp(i) + step_imp .and. &
+                         eed(i)-densmin(i)>0.025d0) then
+!                         print *, q, 'bouncecount'
                     imp(i) = imp(i) + 1
                     if (imp(i) < 6) rbounce(imp(i),:,i) = teil%r(:,i)
                     imp_switch = .false.
+                    min_switch = .true.
                     q_imp(i) = q
+                    densmax(i) = eed(i) ! maximum position of density
+                    densmin(i) = eed(i) ! reset minimum so that it can be judged from to of maximum
                 end if
                 eed_prec = eed
                 ! Calculate post Electronic friction
