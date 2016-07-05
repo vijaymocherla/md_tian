@@ -112,7 +112,7 @@ subroutine out_short(slab, teil,Epot, Eref, itraj, q, rmin_p, col_int, imp, rbou
     if (md_algo_p == 5) then
         write(753,'(A14,f15.5)') 'E_pef   (eV) = ', pEfric
     elseif (md_algo_p == 3 .or. md_algo_p == 4) then
-        write(753,'(A14,f15.5)') 'E_phonon   (eV) = ', pEfric
+        write(753,'(A14,f15.5)') 'E_phonon(eV) = ', pEfric
     end if
     write(753,'(A14,f15.5)') 'E_ref   (eV) = ', Eref
     write(753,'(A14,f15.5)') 'E_total (eV) = ', Epot + Ekin_l + Ekin_p
@@ -175,7 +175,7 @@ subroutine out_detail(output_info, n, itraj,Eref) !mxt_trj.dat
 
 end subroutine out_detail
 
-subroutine out_all(slab, teil, itraj, Eref) !mxt_conf.xyz
+subroutine out_all(slab, teil, itraj) !mxt_conf.xyz
     !
     ! Purpose:
     !           Prints out all the geometries along the trajectory.
@@ -184,7 +184,6 @@ subroutine out_all(slab, teil, itraj, Eref) !mxt_conf.xyz
     !
 
     type(atoms) :: slab, teil
-    real(8) :: Eref
     integer :: ios, itraj,i, n
     character(len=8) str
     character(len=90) filename
@@ -250,7 +249,7 @@ subroutine out_poscar(slab,teil,Epot, Eref, itraj) !mxt_anneal.POSCAR
 
     type(atoms) :: slab, teil
     real(8) :: Epot, Ekin_l, Ekin_p, Eref
-    integer :: itraj, i
+    integer :: itraj
     character(len=8) str
     character(len=90) filename
 
@@ -327,8 +326,8 @@ subroutine out_posvel(slab, teil, itraj, Eref) !mxt_rv.dat
     real(8) :: Eref
     integer :: ios, itraj
     character(len=8) str
-    character(len=90) filename, buffer
-    character(len=80) sys
+    character(len=90) filename
+!    character(len=80) sys, buffer
 
     write(str,'(I8.8)') save_counter
 
@@ -340,7 +339,7 @@ subroutine out_posvel(slab, teil, itraj, Eref) !mxt_rv.dat
 !    close(33)
 !    filename = trim(buffer)//'/conf/mxt_rv'//str//'.dat'
 !    print *, filename
-    
+
     open (753,file=filename, status='replace', &
                     action='write', iostat=ios)
 
@@ -379,7 +378,7 @@ subroutine out_posvel(slab, teil, itraj, Eref) !mxt_rv.dat
 
 end subroutine out_posvel
 
-subroutine out_pdb(slab, teil, q, Eref) !mxt_conf.pdb
+subroutine out_pdb(slab, teil, q) !mxt_conf.pdb
     !
     ! Purpose:
     !           Prints out all the geometries along the trajectory.
@@ -388,7 +387,6 @@ subroutine out_pdb(slab, teil, q, Eref) !mxt_conf.pdb
     !
 
     type(atoms) :: slab, teil
-    real(8) :: Eref
     integer :: ios, q,i, n
     character(len=8) str
     character(len=90) filename

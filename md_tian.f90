@@ -31,7 +31,7 @@ integer, dimension(:), allocatable   :: imp, q_imp          ! collision number
 logical :: exit_key, imp_switch, min_switch
 real(8), dimension(:), allocatable :: eed, eed_prec         ! embedded electron density for projectile for bounce count
 real(8), dimension(:), allocatable :: densmin, densmax      ! embedded electron density for projectile for bounce count
-real(8) :: Eref, leng, mm, no                               ! reference energy
+real(8) :: Eref                                             ! reference energy
 
 !timing
 !real(8) :: start, fin
@@ -315,12 +315,12 @@ do itraj = start_tr, ntrajs+start_tr-1
                     ndata = ndata + 1
 
                 case(-2)
-                    call out_all(slab, teil,itraj,Eref)
+                    call out_all(slab, teil,itraj)
 
                 case(-4)
                     call out_posvel(slab, teil, itraj, Eref)
                 case(-5)
-                    call out_pdb(slab, teil, q, Eref)
+                    call out_pdb(slab, teil, q)
 
                 case default ! full configuration of system
                     if (q > wstep(1)) call full_conf(slab, teil,itraj,Eref)

@@ -423,7 +423,7 @@ else if (confname == 'mxt' .or. confname == 'geo') then
 end if
 if (confname == 'fit') then
     call read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
-                    de_aimd_max, start_l, c_matrix)
+                  start_l, c_matrix)
 end if
 
 if (sasteps > 0) then
@@ -819,7 +819,7 @@ subroutine read_mxt(nspec, teil, slab, n_p0)
 end subroutine read_mxt
 
 subroutine read_fit(fracaimd, n_p, n_p0, n_l, n_l0, teil, slab, &
-                    de_aimd_max, start_l, c_matrix)
+                    start_l, c_matrix)
 
     !
     ! Purpose:
@@ -830,7 +830,6 @@ type(atoms) :: slab, teil
 integer :: n_p, n_l, n_p0, n_l0
 logical :: exists
 integer, dimension(2) :: fracaimd, npts, ea_fraction
-real(8) :: de_aimd_max
 real(8), dimension(3,3):: c_matrix
 
 real(8) :: rtemp
@@ -1269,48 +1268,6 @@ subroutine particle_init(s)
     end if
 
 end subroutine particle_init
-
-subroutine neighbour_list(rpos, nat, neigh) ! This subroutine is presumably rubbish
-!
-!   Purpose:
-!           create list of neighbouring atoms, depending on pes_nigh
-!
-!
-real(8), dimension(:,:), intent(in) :: rpos
-integer, dimension(:,:), intent(out) :: neigh
-integer, intent(in) :: nat
-integer :: i, j, k,l,nn
-real(8) :: r, rcut
-
-
-! Calculate cut/off
-!rcut = a_lat/sqrt2 *sqrt(pes_nigh) + 0.1
-! Allocate array for nn-list
-nn = 0
-neigh = 0
-do i = 1, pes_nigh
-    nn = nn + nneighs(i)
-end do
-!allocate(neigh(nat,nn))
-
-do i = 1, nat
-l = 1
-do j = i+1, nat
-    ! Calculate r with periodic boundary conditions
-!    call pbc_dist( rpos(:,i), rpos(:,j), cell_mat, cell_imat, r)
-    ! Select those which are within cut off
-    if (r <= rcut) then
-!        neigh(i,l) = j
-!        neigh(j,nneighs(1)-l) = j
-        l = l+1
-    end if
-    k = k+1
-end do
-end do
-
-
-
-end subroutine neighbour_list
 
 end module md_init
 

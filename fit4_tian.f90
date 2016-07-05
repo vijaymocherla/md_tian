@@ -26,7 +26,6 @@ subroutine fit(slab, teil)
 
     type(atoms) :: slab, teil
     integer :: npts ! number of points to be fitted
-    real(8), dimension(14) :: B ! parameters for the fit.
     integer, dimension(14) :: IB    ! fixed parameters
     integer :: ip
 
@@ -217,7 +216,7 @@ subroutine fit(slab, teil)
     call emt_e_fit(x_all(1,:,:nl_atoms+np_atoms), Eref)
     call dev2eqdft(Eref)        ! EMT-Energy for Equilibrium-DFT-points
     call dev2aimddft(Eref,mm)   ! How does new fit reproduce AIMD? C44?
-    call denseqdft(Eref)        ! Density at 10 Equilibrium sites
+    call denseqdft()            ! Density at 10 Equilibrium sites
 
     if (confname == 'fit') then
         do q=2,npts
@@ -286,7 +285,7 @@ deallocate(array, fix_p)
 
 end subroutine dev2eqdft
 
-subroutine denseqdft(Eref)
+subroutine denseqdft()
 !
 ! Purpose:
 !           Calculate density for all 10 sites.
@@ -296,7 +295,7 @@ subroutine denseqdft(Eref)
 integer :: j, npts,vgls
 real(8), dimension(:,:),   allocatable :: fix_p
 real(8), dimension(:,:,:), allocatable :: array
-real(8) :: energy, Eref
+real(8) :: energy
 real(8) :: pdens
 
 call open_for_read(69,trim(fit_dir)//'/Eq_points_dft.dat')
