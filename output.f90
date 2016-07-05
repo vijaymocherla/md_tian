@@ -327,18 +327,10 @@ subroutine out_posvel(slab, teil, itraj, Eref) !mxt_rv.dat
     integer :: ios, itraj
     character(len=8) str
     character(len=90) filename
-!    character(len=80) sys, buffer
 
     write(str,'(I8.8)') save_counter
 
     filename = 'conf/mxt_rv'//str//'.dat'
-!    sys = 'pwd > filename.txt'
-!    call system(sys)
-!    call open_for_read(33,'filename.txt')
-!    read(33,'(A)',iostat=ios) buffer
-!    close(33)
-!    filename = trim(buffer)//'/conf/mxt_rv'//str//'.dat'
-!    print *, filename
 
     open (753,file=filename, status='replace', &
                     action='write', iostat=ios)
@@ -444,8 +436,5 @@ n=slab%n_atoms+teil%n_atoms
     close(753)
     overwrite = .false.
 end subroutine out_pdb
-
-
-
 
 end module output

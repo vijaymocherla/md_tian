@@ -32,8 +32,6 @@ subroutine fit(slab, teil)
     real(8), dimension(:,:,:), allocatable :: X
     real(8), dimension(:), allocatable :: Y
     integer, dimension(8) :: NARRAY ! Integer array of control parameters
-
-    ! number of parameters held constant = NARRAY(4)
     character(20) :: TITLE ! string of 20 characters used for title on printout
 
     ! Variables, non nllsq-related
@@ -42,7 +40,7 @@ subroutine fit(slab, teil)
 
     character(len=100) teil_nml_out, slab_nml_out ! directory in which parameter-files are.
 
-    real(8) :: mm,no,leng, Epot1                 ! calculate the H-Au bondlength
+    real(8) :: mm, no, leng, Epot1               ! calculate the H-Au bondlength
     real(8), dimension(:,:), allocatable :: blen ! array to calculate the H-Au bondlength
 
     ncells = 1.0d0/((2*rep(1)+1)*(2*rep(2)+1)) ! 1/number of atoms in layer
@@ -98,8 +96,6 @@ subroutine fit(slab, teil)
                 end if
 
                 if(q<11) write( *,'(1X, 5F15.8)') X(q,1,1), X(q,2,1), X(q,3,1), (Epot-Eref)*ncells, Y(q)
-                !        write(10,'(1X, 5F15.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1)), Y(q)
-                !        write(7, '(1X, 4F16.8)')  X(q,1,1), X(q,2,1), X(q,3,1), (energy-e_ref)/((2*rep(1)+1)*(2*rep(2)+1))
 
                 sumsq=sumsq+((Epot-Eref)*ncells-Y(q))**2
             end do
@@ -166,9 +162,6 @@ subroutine fit(slab, teil)
     TITLE = 'EMT_fit'
     CALL nllsqbc (Y, x_all , NARRAY , IB, natoms, ncells)
 
-    !        print *, 'pars_p', pars_p
-    !        print *, 'pars_l', pars_l
-
     ! Write  new parameter files
     call open_for_write(11,teil_nml_out)
     write(11, *) 'Projectile EMT Parameters'
@@ -225,13 +218,11 @@ subroutine fit(slab, teil)
             if (q <= fracaimd(1)+1) then
                 sumsq_pure = sumsq_pure+((Epot-Eref)*ncells-Y(q))**2
             endif
-!                se = se+Sqrt(((Epot-Eref)*ncells-Y(q))**2)
         end do
     elseif (confname == 'dens') then
         do q=2,npts
             call emt_dens_fit(x_all(q,:,:nl_atoms+np_atoms), Epot,pdens)
             sumsq=sumsq+(pdens-Y(q))**2
-!                se = se+Sqrt((pdens-Y(q))**2)
         end do
 
     end if
@@ -329,7 +320,6 @@ close(17)
 deallocate(array, fix_p)
 
 end subroutine denseqdft
-
 
 subroutine dev2aimddft(Eref, mm)
 !

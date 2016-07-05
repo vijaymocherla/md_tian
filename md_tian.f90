@@ -352,13 +352,6 @@ do itraj = start_tr, ntrajs+start_tr-1
     if (wstep(1)== 0) call out_detail(output_info, ndata, itraj, Eref)
 
     if (wstep(1)==-3 .or. wstep(1) == 0) call out_poscar(slab,teil,Epot, Eref, itraj)
-!    if (wstep(1)== 0) then
-!        call open_for_write(797,'/home/sjanke/git/md_tian/config.dat')
-!        write(797,*) slab%r
-!        write(797,*) teil%r
-!        close(797)
-!    end if
-
 
     !timing
     !call cpu_time(fin)
