@@ -17,10 +17,36 @@
 \usepackage{todonotes}
 %Make index
 \usepackage{makeidx}
+\usepackage{listings}
+\usepackage{color}
+
+\newcommand{\9}{\mathrm}
+\newcommand{\0}{\,\mathrm}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
 
 
 \title{\huge{MD Tian Xia}}
-\author{\textbf{Manual}\\ \\Prof. Dr. Daniel J. Auerbach, Svenja M. Janke, Marvin Kammler and Dr. Alexander Kandratsenka}
+\author{\textbf{Manual}\\ \\Sascha Kandratsenka and Svenja M. Janke}
 \publishers{Institute of Physical Chemistry\\ Georg-August Universität Göttingen\\ Max Planck Institute for Biophysical Chemistry, Göttingen.}
 \date{}
 
@@ -184,8 +210,8 @@ pip 0 6.0
 \end{verbatim}
 \caption{\label{Fig:mxt:MDsimulation}The control file used in MD\_tian for a typical MD-simulation.}
 \end{figure}
-Figure\,\ref{Fig:mxt:thermalization} shows the control files used to equilibrate a slab and Fig.\,\ref{Fig:mxt:MDsimulation} shows the control file that uses the configurations from the slab-equilibration as input to start an MD-simulation.
-The construction of equilibrated slab configurations that can be used as starting configurations works by first creating a single equilibrated configuration using the control file in Fig.\,\ref{Fig:mxt:thermalization}, top, and then, starting from that configuration, creating 1000 configurations in total which can be randomly sampled at the start of a trajectory (Fig.\,\ref{Fig:mxt:thermalization}, bottom).
+Figure\,\ref{Fig:mxt:thermalization} shows the control files used to equilibrate a slab and Fig.\,\ref{Fig:mxt:MDsimulation} shows the control file that uses the configurations from the slab-equilibration as input to start an MD-simulation. 
+The construction of equilibrated slab configurations that can be used as starting configurations works by first creating an equilibrated slab at 0 K because the relaxation is different in EMT and DFT. Next, you need to create a single equilibrated configuration at the desired temperature using the control file in Fig.\,\ref{Fig:mxt:thermalization}, top, and then, starting from that configuration, creating 1000 configurations in total which can be randomly sampled at the start of a trajectory (Fig.\,\ref{Fig:mxt:thermalization}, bottom). 
 The flags are:\\
 
 \noindent\textbf{azimuth}\index{azimuth}\\ 
@@ -357,8 +383,6 @@ This one determines the total number of AIMD trajectories that are available and
 
 Strictly speaking, a routine is implemented into the program that allows fitting the electron densities obtained from the VASP calculations. However, because the electron densities obtained from EMT and VASP are not the same entities, this routine has been commented out and is at present not serviceable.
 
-A number of input-files\todo{input fit} go along with the fit:
-
 \subsection{Surface Annealing}
 To test and describe the stability of the reconstructed surface, I performed simulations with surface annealing with the MD\_tian program. An exemplary control file I used to steer the simulated annealing is shown in Fig.\,\ref{Fig:mxt:anneal}. The flags that were not described above are those that control the annealing procedure.
 
@@ -391,7 +415,6 @@ To simulate annealing, the Langevin Dynamics are used as a thermostat. A higher 
 
 \subsection{Output files}
 \label{Sec:mxt:output}
-\subsubsection{MD-simulations}
 The \textit{mdtianxia}-program offers seven different output options which can be controlled with the flag \textit{wstep} in the input file. The first slot for \textit{wstep} determines which kind of output file is printed and the last, where it makes sense, in which step.
 \\
 \textbf{wstep(1)}\index{wstep} $\mathbf{=m}$ saves all the information that is necessary to continue the simulation into a binary file of the form mxt\_conf$n$.bin (where $n$ can be any number between 99999999 and 00000000) after the $m^\mathrm{th}$ step and then every wstep(2)$^\mathrm{th}$ step. This includes saving the step, the surface temperature, all input parameters for the species in the system such as number of atoms, fixed atoms, current velocities, positions, accelerations and densities. Furthermore, the step and the potential energy is saved.\\
@@ -401,15 +424,6 @@ The \textit{mdtianxia}-program offers seven different output options which can b
 \textbf{wstep(1)} $\mathbf{=-3}$ produces a POSCAR-file at the end of the trajectory with the name\linebreak mxt\_anneal$n$.POSCAR. It also contains information about the energies at the end of the trajectory.\\
 \textbf{wstep(1)} $\mathbf{=-4}$ produces files of the form mxt\_rv$n$.dat which contain the initial conditions and energies and those at the saving-time of the trajectory. Here, the positions, velocities and densities are saved in every wstep(2)$^\mathrm{th}$ step of the trajectory.\\
 \textbf{wstep(1)} $\mathbf{=-5}$ produces files of the form mxt\_conf$n$.pdb. These files have the pdb-format and can be used e.g. with the Visual Molecular Dynamics (VMD) package\,\cite{humphrey1996}.
-
-\subsubsection{Output files of the fitting routine}
-The fitting routine automatically creates four types of output-files for the fit $n$: the parameter file(s) that contain the new parameters resulting from the fit, the dev2eqdft$n$.dat file and the densEqdft$n$.dat file, the traj$n$.dat. It furthermore writes information on the fit into the c44rms.dat-file.
-
-The dev2Eqdft$n$.dat file contains information on the 3D-grid: The number of the site and its $x,y$-position in steps of 0.1\,\AA, staring from 6.0\,\AA~above the surface to $\sim$9.0\ below the surface. For this, the Eq\_points\_dft.dat-file is read in which contains all the coordinates for this purpose. In the dev2Eqdft$n$.dat-file, the coordinates are followed by the potential energy calculated with the parameters resulting from the fit. This file can be used to show a fit's reproduction of the 3D-grid input data set.
-
-The densEqdft$n$.dat file works in the same manner as the dev2Eqdft$n$.dat file, only instead of the potential energy at each position, it contains the local background electron density.
-
-The traj$n$\_1.dat-file is related to the AIMD-trajectories that are used in the input-data set and control data set for the fit. It contains the step of each trajectory followed by the potential energy from the DFT-simulations and then by the potential energy calculated with the fit parameters from the positions corresponding to the step.
 
 \section{The Propagation}
 \subsection{Propagation Algorithms}
@@ -470,7 +484,7 @@ The Bulk-calculations determine the lattice constant corresponding to the chosen
 Optimisation:\\
 Optimisation needs to be done to get the best result with the lowest computational effort. For that, several input parameters for VASP should be checked:\\
 \textbf{ENCUT}: The plane-wave energy cut-off. The smaller this energy, the lower the computational effort. If it is too small, though, necessary contributions are neglected. Vary in steps of 50 eV. One already needs to think about future calculations at this point. ENCUT needs to be at least as large as the largest ENMAX of all POTCAR files which will be used. Do not compare calculations of different ENCUT. The ENMAX-tag can be found in the first lines of every POTCAR file.\\
-\textbf{K-points}: The k-points are the mesh with which the brillouin-zone is sampled in reciprocal space. The larger the number of k-points, the more accurate the sampling. But a large number of k-points also increases the computational effort. Do calculations with 8 to $\sim$35 k-points\\
+\textbf{K-points}: The k-points are the mesh with which the brillouin-zone is sampled in reciprocal space. The larger the number of k-points, the more accurate the sampling. But a large number of k-points also increases the computational effort. Do calculations with 4x4x4 to $\sim$20x20x20 k-points and note which ones between 4 and 10 compare well to larger k-point sets.\\
 \textbf{ISMEAR}: This parameter determines the smearing. For metal bulk and slab do ISMEAR=$1$ or ISMEAR=$2$ for Methfessel-Paxton. You can also check other forms of smearing, but you do not need to.\\
 \textbf{SIGMA}: This parameter is related to the entropy in the system. It needs to be checked and adjusted at the end of the calculations. For the beginning, set SIGMA = 0.2. After the lattice constant is determined, vary SIGMA between 0.01 and 0.5 and check the entropy as explained below. The entropy should be less than 1\,meV/atom. Too large smearing values of SIGMA might lead to a wrong energy, but too low values require a larger kpoint-mesh to accomplish convergence. Adjust so that the entropy per atom is slightly below 1\,meV. If you use a 1x1 cell (which you should for bulk-calculations), the entropy is already displayed with respect to one atom.\\
 \textbf{IBRION}: The algorithm with which the ionic positions are updated and moved. $1$ and $2$ are both reasonable choices for bulk-calculations and should give the same result.\\
@@ -522,7 +536,7 @@ EDIFFG=-1.0E-03	! 2nd accuracy paramter
 
 ISMEAR=1		! smearing
 SIGMA=0.2		! entropy-related
-ALFO=Fast
+ALGO=Fast
 
 NSW=100			!number of ionic steps during relaxation
 ISIF=7
@@ -572,7 +586,7 @@ PREC = Normal
 LREAL = .False. 
 SIGMA = 0.2
 ISMEAR = 1              
-GGA = 91       
+GGA = 91       ! PW91
 
 NSW = 1     ! No ionic relaxation
      
@@ -591,9 +605,9 @@ After the calculations for different ENCUTs and k-points (and whichever paramete
 \caption{Lattice constant convergence for different k-points.}
 \label{kpfit}
 \end{figure}
-Plot the lattice constant for different k-points (cf Fig.\,\ref{kpfit}). For large k-points, the lattice constant should converge to a certain value ($a_0=3.9662$\,\AA~in case of Fig.\,\ref{kpfit}). This value should be regarded as the optimal value. Now, to get the best k-point set for further calculation, choose the lowest number of k-points that roughly (that is, within 0.001 eV or lower) reproduces your lattice constant (in case of Fig.\,\ref{kpfit}, that would be k-points 21 or 24). For the other VASP-parameters you varied, proceed accordingly.\\
-Lastly, the SIGMA-parameter needs to be checked.\\
-For that, vary the parameter SIGMA between 0.01 and 0.5. Once the calculations are done, the entropy needs to be determined. This can be done in two different way. You can check in the OUTCAR-file for the lowest occurrence of the line ``entropy T*S    EENTRO =" (cf. Fig.\,\ref{ent1}), or you can calculate the difference between the free energy and the energy without entropy. Both should be less than 1\,meV/atom. SIGMA should be as large as possible without compromising the energy of the system, so choose the largest SIGMA whose energy still corresponds to the energy of the calculations with lower SIGMA.\\
+Plot the lattice constant for different k-points (cf Fig.\,\ref{kpfit}). For large k-points, the lattice constant should converge to a certain value ($a_0=3.9662$\,\AA~in case of Fig.\,\ref{kpfit}). This value should be regarded as the optimal value.\\
+%Now, to get the best k-point set for further calculation, choose the lowest number of k-points that roughly (that is, within 0.001 eV or lower) reproduces your lattice constant (in case of Fig.\,\ref{kpfit}, that would be k-points 21 or 24). For the other VASP-parameters you varied, proceed accordingly.\\
+Lastly, the SIGMA-parameter needs to be checked. For that, vary the parameter SIGMA between 0.01 and 0.5. Once the calculations are done, the entropy needs to be determined. This can be done in two different way. You can check in the OUTCAR-file for the lowest occurrence of the line ``entropy T*S    EENTRO =" (cf. Fig.\,\ref{ent1}), or you can calculate the difference between the free energy and the energy without entropy. Both should be less than 1\,meV/atom. SIGMA should be as large as possible without compromising the energy of the system, so choose the largest SIGMA whose energy still corresponds to the energy of the calculations with lower SIGMA.\\
 \begin{figure}[h!!]
 \begin{verbatim}
  Free energy of the ion-electron system (eV)
@@ -664,7 +678,7 @@ c_z= \left(0.0,~0.0,~\frac{(n_{lay}-1)a_0}{\sqrt{3}} + vac\right)
 \end{equation}
 Here, $a_0$ is the lattice constant from the bulk-calculations, $n_{lay}$ is the number of layers in the slab and $vac$ is the vacuum distance. It becomes evident why the lattice constant was multiplied into the cell matrix in the POSCAR-file in Fig.\,\ref{spos}; the $z$-coordinate of $c_z$ is not divisible by $a_0$ any longer. The complete cell matrix can looks as follows:
 \begin{equation}
-\begin{pmatrix}\begin{matrix} a_0 \frac{1}{\sqrt{2}} & 0.0 & 0.0 \\ a_0\frac{1}{2\sqrt{2}} & a_0 \sqrt{\frac{3}{8}} & 0.0 \\0.0 & 0.0 & \frac{(n_{lay}-1)a_0}{\sqrt{3}} + vac \end{matrix} \end{pmatrix}
+\begin{pmatrix}\begin{matrix} a_0 \frac{1}{\sqrt{2}} & 0.0 & 0.0 \\ -a_0\frac{1}{2\sqrt{2}} & a_0 \sqrt{\frac{3}{8}} & 0.0 \\0.0 & 0.0 & \frac{(n_{lay}-1)a_0}{\sqrt{3}} + vac \end{matrix} \end{pmatrix}
 \end{equation}
 Furthermore, because we do not want to relax the entire cell now but only parts of the cell, we need to specify this in our POSCAR-file. This can be done by putting the command `selective dynamics' above the specification of the coordinate system. To tell VASP how to relax the coordinates, either T for `true' (relax) or F for `false' (keep fixed) need to be placed behind the coordinates of each atom, for each coordinate. Example: In line 9 of the POSCAR-file (cf Fig.\,\ref{spos}), the coordinates of the first atom are given. Because relaxation should only be done in $z$-direction, the $x$ and $y$-coordinates are fixed by writing F F at the end of the line. The $z$-coordinate is relaxed by placing T behind the two Fs.\\
 A good first guess for $vac$ is $\approx 13$\,\AA. This should avoid interaction between the slabs created by the periodic boundary conditions.\\
@@ -672,14 +686,14 @@ In the exemplary POSCAR file in Fig.\,\ref{spos}, the $z$-coordinate $=0.0$\,\AA
 \subsection{Convergence Tests}
 First, the most advantageous parameters for the relaxation should be determined. For that, the following flags can (e.g.) be tested:\\
 \textbf{ENCUT}: This flag does not necessarily need to be tested. The value obtained from the Bulk-calculations or the default should be fine.\\
-\textbf{K-points}: The lowest number of k-points which still gives a converged result should be chosen. Check from 8 to $\sim$35.\\
+\textbf{K-points}: Check k-points from 4x4x1 to about 20x20x1 and look at the surface energy and surface relaxation. Compare the values from small k-point sets to larger k-point sets and note which small k-points set produce results similar to the high k-point limit. You might also want to check the literature to see how well your functional of choice performs in general.\\
 \textbf{ISMEAR}: Dfferent smearing methods can but need not be tested. If not tested, ISMEAR = 1 is a good choice.\\
-\textbf{Number of layers}: It might be useful to do the procedure for several layers while one is at it already.\\
+\textbf{Number of layers}: It might be useful to do the procedure for several surface layers while one is at it already.\\
 $\textbf{vac}$: The thickness of the vacuum layer should be checked to avoid interactions between the slabs created by the periodic boundary conditions. (2-15\,\AA). The smaller the vacuum, the lower the calculation effort.\\
 \textbf{EDIFF}: Different convergence criteria can be checked.\\
-\textbf{SIGMA}: At the end of the convergence tests, SIGMA should be checked again. As mentioned in section\,\ref{bulk}, too large smearing values of SIGMA might lead to a wrong energy, but too low values require a larger kpoint-mesh. SIGMA should be as large as possible in order to minimise the difference between the free energy and the total energy.\\
+\textbf{SIGMA}: At the end of the convergence tests, SIGMA should be checked again. As mentioned in section\,\ref{bulk}, too large smearing values of SIGMA might lead to a wrong energy, but too low values require a larger kpoint-mesh. SIGMA should be as large as possible while keeping the difference between the free energy and the total energy minimal.\\
 \\
-In the first step, the k-points need to be tested. For this, set IBRION = 1 or 2 and ISIF = 2 in the INCAR-file (cf Fig.\,\ref{slabincar1}) and test the k-points from 8 to $\sim$35. To avoid interaction of the slabs created through the periodical boundary conditions, set $vac$ to 13\,\AA in the POSCAR-file.
+In the first step, the k-points need to be tested. For this, set IBRION = 1 or 2 and ISIF = 2 in the INCAR-file (cf Fig.\,\ref{slabincar1}) and test the k-points from 4 to $\sim$20. To avoid interaction of the slabs created through the periodical boundary conditions, set $vac$ to $ 13 $\,\AA in the POSCAR-file.
 For each calculation, extract the `energy without entropy' from the OUTCAR-file after the calculations have finished and select the lowest k-points that reproduces the energy to which the larger k-points converge to. You can perform this procedure for several ISMEAR or check the behaviour of ISMEAR with the optimal k-point you get from the k-point-calculations here.
 \begin{figure}[h!!]
 \begin{verbatim}
@@ -775,7 +789,7 @@ Either use the CONTCAR-file as a POSCAR-file for the next calculations or extrac
 \label{H+slab}
 For the convergence test, the difference in energy between an H-atom 6.0\,\AA~above the slab's surface and on the slab's surface (1.1\,\AA) is tested. \\
 The \textbf{KPOINTS-file} stays the same as for the slab-calculations, with the set of k-points deemed optimal during the convergence test for the slab-calculations. 
-The \textbf{POTCAR-file} for the metal needs to be unified with a POTCAR-file for H.
+The \textbf{POTCAR-file} for the metal needs to be concatenated with a POTCAR-file for H.
 \subsection{The POSCAR-file}
 Use the new POSCAR-file with the relaxed interlayer distance from Section\,\ref{slab}. Remove everything from the POSCAR that refers to relaxations, that is, the line `selective dynamics' and the Fs and Ts at the end of the single Au-atom coordinates.\\
 New about the POSCAR-file in this step of the calculations is that a hydrogen atom is added to the calculation. That changes two things. For one, the cell-size needs to be increased to avoid interaction between the hydrogen atom with its images created from the periodic boundary conditions. So far, the POSCAR-file had a $1\times1\times n_{lay}$-cell where $n_{lay}$ is the number of layers in the cell. Now, the cell-size is increased by one atom in each $x$- and $y$-direction and a $2\times2\times n_{lay}$ is formed (cf Fig.\,\ref{cpos}). Larger cell-sizes are imaginable, but for the creation of the potential energy surface (PES), AIMD trajectories will later need to be produced which are computationally very demanding, and larger cell-sizes will add a considerable number of atoms which will increase the computational effort tremendously.\\
@@ -851,7 +865,7 @@ Two POSCAR-files need to be produced for this step of the calculations. One wher
 The H-atom has a free electron, therefore, it has a spin and a magnetic moment. This needs to be accounted for. At the end of the optimisation, you can check if it makes a difference to specify it or not.\\
 I have been told that ISMEAR = -1 is the best setting for ISMEAR you can choose for H+metal. You are welcome to check it. But remember, you must not continue any calculations with ISMEAR = -1 that have been performed earlier with another value of ISMEAR. That is, if you did your slab relaxation with ISMEAR = 1, you must not select ISMEAR = -1 for your H@Metal-system.\\
 \subsection{Convergence tests}
-Again, the number of \textbf{K-points} should be checked (8-35).\\
+Again, the number of \textbf{K-points} should be checked (4-20).\\
 \textbf{ENCUT}: Start with the highest of the specified ENMAX-tag of both concatenated POTCAR files. Increase it in steps of 50 eV until convergence is accomplished. If no convergence can be observed, give it the value of the highest ENMAX.\\
 \textbf{Number of layers}: Either choose the number of layers you would like to have to fit your PES or check which number of layers with which number of k-points, ENCUT and SIGMA calculates fastest while still giving the same result as the most expensive calculations.\\
 \textbf{SIGMA}: For sigma, proceed as described in the sections above. Check how thick your \textbf{Vacuum-layer} needs to be. Again, 13\,\AA seems a good guess to begin with.\\
@@ -901,8 +915,76 @@ Site&$x$-coordinate&$y$-coordinate\\
 \end{table}\newline\noindent
 Extract from the OUTCAR-files of each calculation the `energy sigma $\rightarrow$ 0' -energy. The energy when the H-atom is above the fcc-site and 6.0\,\AA~above the surface serves also as \textbf{reference energy}.
 \subsection{The AIMD-trajectories}
-Part of the fitting procedure also includes taking geometries at which the metal-atoms are not on their equilibrium positions and the H-atom is on other plausible positions that it might take up during a trajectory. To sample that configuration space, we take geometries from an AIMD-trajectory calculated for the very same system. Because we have not yet found out what kind of AIMD-geometries might give the best contribution to a fit, it is best to calculate roughly 20 AIMD-trajectories and use geometries from each of these trajectories as input for the fit.\\
-I have no idea how to actually calculate AIMD trajectories, but I hope someone else can oblige here.
+Part of the fitting procedure also includes taking geometries at which the metal-atoms are not on their equilibrium positions and the H-atom is on other plausible positions that it might take up during a trajectory. To sample that configuration space, we take geometries from an AIMD-trajectory calculated for the very same system. Because we have not yet found out what kind of AIMD-geometries might give the best contribution to a fit, it is best to calculate roughly a dozen AIMD-trajectories and use geometries from each of these trajectories as input for the fit.
+
+Before actually calculating AIMD trajectories, the slab needs to be equilibrated to the desired temperature. First, choose a k-point mesh between 4x4x1 and 10x10x1 that gave good results in terms of Metal-H adsorption energy, surface energy, lattice constant and interlayer relaxation distance. You need to use the same k-points mesh for the trajectories and the H-atom-grid. Then, find the corresponding fully relaxed slab CONTCAR file and use this as the geometry to start the slab equilibration. Make sure it contains the \textit{selective dynamics} tag and allow movement for all atoms in all dimensions except for the two bottommost layers which you fix. The INCAR file for equilibration can be found in Fig.\,\ref{figINCARSlabEqui}. Set the initial temperature to twice the value that you want to have for your trajectories. If you do not know why, read about the equipartition theorem. Then, let the slab equilibrate for 500 to 1000 ps (NSW $\cdot$ POTIM) and check the OSZICAR file if the temperature has settled somewhere around your desired temperature. If this is not the case, there is most probably something wrong with your initial slab geometry in that you did not find the minimum energy configuration. If the temperature is correct, generate different slab geometries for your AIMD trajectories.
+
+Referring again to Fig.\,\ref{figINCARSlabEqui}, change ISTART and ICHARGE to 1, delete the TEBEG line and adjust NSW such that 100 fs are simulated. The resulting CONTCAR file is your first slab geometry for a trajectory. Generate about a dozen of those and remember to always keep the CONTCAR files. Next, you need to add an H-atom to them. In the sixth line, add a whitespace and "H" to the metal element abbreviation and in the seventh line, add a whitespace and "1". Below the metal atomic coordinate section, place the coordinates of the H atom. Its $x$- and $y$-values must be random in each trajectory and can be generated with your RNG of choice. Its $z$-value is the height above the slab at which no interaction with the slab is observed and defaults to 6\,\AA. Also add a line below the metal atom velocity section that describes the initial velocity vector of your H-atom in \AA/fs. This one can be the same in each trajectory. Delete all lines below the H-atom initial velocity vector in each CONTCAR file. Also check whether the total energy remained somewhat constant during the equilibration. Plot the total energy (labeled "E=" in the OSZICAR file) against the ionic step and check if it stays constant within about 10 meV. If this is not the case, try decreasing POTIM, decreasing EDIFF or setting real space projection to false.
+
+Now that you have about a dozen files describing system geometries and atom velocities, you can start the trajectories. A suitable INCAR file is shown in Fig.\,\ref{figINCARTrajectory}. Use the same k-points file as before and remember to concatenate the metal and H POTCAR files. After a trajectory has finished e.g. the H-atom was scattered back to its initial height, the H-atom has traversed the slab, or 120 fs have passed, you need to check several things to make sure the simulation is reasonable. First, check again if the total energy remained somewhat constant during the trajectory. Then, check the spin which is labeled "mag=" at each ionic step in the OSZICAR file. The spin should start decreasing when the H-atom is at a distance of around 2\,\AA and approaching the slab. When the spin reaches zero, it means the electron of the H-atom has affiliated itself with bulk electronic states. Of course, in reality the spin is always in integer but that's just how DFT rolls, do not worry about it too much. The crucial part is scattering the H-atom from the slab. The spin is zero when the H-atom is close to or inside the slab. Now if it gets scattered back, it will have to recover its original spin state. From my experience, this is not always the case. I encountered trajectories in which the overall spin of the system remained zero when the H-atom reached its initial height of six angstroms above the surface. What was happening there was that the electron density around the H-atom consisted of half spin up and half spin down. In consequence, the potential energy of the system was about 1\,eV too high since zero interaction energy is defined as the H-atom being in a doublet state six angstroms about the surface. What VASP does there is to take the electron density from the previous ionic step and use it as an initial guess for the next step so that it does not need to optimize much and speed up the simulation. In doing so, it gets stuck in a local minimum electronic configuration having an unreasonable potential energy. The only solution I have found so far is to always solve the electronic structure problem from scratch at each ionic step while the H-atom is regaining its spin. Then, the chance of the program ending up at the wrong energy is minimized but of course in exchange for a much longer run-time. Most importantly though, each ionic step is independent from both its predecessors and successors which facilitates the identification of convergence problems. A python script which automatically stops and restarts VASP to get the spin right can be found in Ch.\,\ref{Sestra}.
+
+
+\begin{figure}
+\begin{verbatim}
+SYSTEM = Slab Equilibration
+PREC = Accurate     ! use your setting here
+ENMAX = 400         ! use your setting here
+ALGO = Very Fast    ! fastest if close to optimum, use for MD
+ISTART = 0
+ICHARGE = 2
+NELM = 300
+EDIFF = 1.0E-05
+EDIFFG = -1.0E-03
+NELMIN = 4          ! ensures convergence
+ISYM = 0
+SMASS = -3          ! use microcanonical ensemble
+TEBEG = 600         ! twice the desired temperature
+LREAL = Auto
+NSW = 1000          ! enough time even for the heaviest metals
+ISIF = 0            ! only calculate what's necessary
+IBRION = 0          ! a Verlet algorithm
+POTIM = 0.5         ! time step in fs (works for 3d metals and heavier)
+ISMEAR = 1          ! Methfessel-Paxton for metals
+SIGMA = 0.1         ! use your smearing here
+GGA = PE            ! your functional
+\end{verbatim}
+\caption{Exemplary INCAR-file for nonmagnetic surfaces to perform an equilibration.}
+\label{figINCARSlabEqui}
+\end{figure}
+
+\begin{figure}
+\begin{verbatim}
+NPAR = 2            ! square root of # CPUs
+PREC = Accurate     ! use your setting here
+ENMAX = 400         ! use your setting here
+ALGO = Very Fast    ! use this for MD
+ISTART = 0
+ICHARGE = 2
+NELM = 300
+EDIFF = 1.0E-05
+EDIFFG = -1.0E-03
+NELMIN = 4          ! ensures convergence
+ISYM = 0
+SMASS = -3
+ISPIN = 2           ! turn on spin of H
+MAGMOM = 24*0 1     !  and possibly also of the slab
+AMIX = 0.3          ! use
+BMIX = 0.0001       !  these
+AMIX_MAG = 0.3      !  settings
+BMIX_MAG = 0.0001   !  for
+MAXMIX = 20         !  mixing
+LREAL = Auto
+NSW = 1200          ! 120 fs is enough
+ISIF = 0
+IBRION = 0
+POTIM = 0.1         ! use 0.1 when an H-atom is involved
+ISMEAR = 1          ! Methfessel-Paxton for metals
+SIGMA = 0.1         ! use your smearing here
+GGA = PE            ! your functional
+\end{verbatim}
+\caption{Exemplary INCAR-file for an AIMD trajectory.}
+\label{figINCARTrajectory}
+\end{figure}
 
 \section{Fitting the Potential Energy Surface with EMT}
 \subsection{The parameters}
@@ -1053,160 +1135,450 @@ Ni&&2.58\,\cite{kant1979}&&\\
 If the fit has problems converging, you can first try fitting to the equilibrium-GGA-DFT-points and use the resulting parameters as input in a new fit where you then include both the equilibrium-DFT-points and the aimd-DFT-points.
 Last but not least: form a circle of salt around your computer before starting the fitting and sacrifice a few drops of water to Thoth.\\
 
-\chapter{Skycruizer}
+
+
+\chapter{Skycruiser}
+Skycruiser is Genetic Algorithm wrapper script to the md\_tian program. It fully automatizes the fitting of a Potential Energy Surface. Without this script, the only part in the entire procedure that lacked a systematic approach is the actual tuning of the EMT parameter set itself. The problem is the following: on the one hand, md\_tian uses a gradient descend method to minimize the root mean square error between EMT and DFT reference energies. On the other hand, there are seven parameters per atomic species in EMT which enable the PES to be applicable to a large variety of systems, but even the most sophisticated nonlinear least squares fitting routine does not perform well in such a high dimensional environment. In the best case, it simply does not find the global minimum, but most of the time, the routine yields a PES which is far from being physically reasonable. It might, for example, not fulfill the elastic stability criteria or let the metal disintegrate at a ridiculous temperature, among other exasperating problems.
+
+Skycruiser a systematic approach to this multidimensional optimization problem. It extends the goal from reproducing DFT energies by requiring compliance to metal properties like the bulk and shear moduli and the cohesive energy alongside metal-hydrogen interaction characteristics like the vacuum bond dissociation energy. A Genetic Algorithm seems well-suited for this task since one of its inherent features is a fitness function that combines all of these measures of quality into a single number. Skycruiser can run md\_tian in parallel with different initial EMT parameters. In this approach, a large share of parameter space can be explored in a productive fashion. The algorithm shoots off several hundred fits in each generation and those, which give physically meaningful PESs and also reproduce the interaction energies, are possible candidates for the successful simulation of atomic beam scattering experiments. In the algorithm, PESs are assigned a fitness value after each local optimization and mix their EMT parameters to form the subsequent generation. By doing so, new initial parameter sets are generated with each individual and optimized sets are passed on, which reproducibly leads to fitness convergence after roughly one hundred generations.
+
+In this optimization problem, the global minimum is not (necessarily) found because of two reasons. First, search space is simply to large to be explored exhaustively. This is why a heuristic method like a Genetic Algorithm is appropriate. Second, and much more general, the objective function to minimize is not really objective. It is an empirical expression that condenses all quality criteria into a single number. Different contributions might be weighted differently and since so many of them need to be taken into account, there are a lot of possible paths to take.
+
+\section{Folder structure}
+This section describes the files and folders that need to present to use the Skycruiser framework. You will need two files that contain the initial parameters (one file for the projectile, one file for the metal). They need to be in a format that is readable to the md\_tian program. Also, you will need the "Eq\_points\_dft.dat" and "energy\_eq.dat" files which are mandatory to do a fit in md\_tian. Next, the relaxed slab geometry must be in a file in which the lattice constant (factor in 2nd line of VASP POSCAR file) has been multiplied into the cell vectors and atomic coordinates, so that it only contains plain cartesian coordinates. You will also need a folder which contains the AIMD trajectories. You can name it however you want but inside it, there must be folders of the format "traj\%03d". Inside each of these folders, there must be two files. One called "analyse.dat" which contains the propagation time of the trajectory in fs in the first column and the "E0=" values of each ionic step from the OSZICAR file in the third column. The other file is called "XDATCAR.dat" and is the XDATCAR file produced by VASP (comb\_XDATCAR if you are using Sestra). The only necessary modification you need to make is to replace all lines starting with "Direct configuration" with a blank line.
+
+\section{Input file}
+\begin{figure}
+\begin{verbatim}
+geometry_file = /home/mkammle/Calculations/Nickel/Fit2/ni111_2x2x6.POSCAR
+fitdata_folder = /home/mkammle/Calculations/Nickel/Fit2/traj_folder
+projectile_fitparams_file = /home/mkammle/Calculations/Nickel/Fit2/emt_stroem_H.nml
+lattice_fitparams_file = /home/mkammle/Calculations/Nickel/Fit2/emt_stroem_Ni.nml
+energy_eq = /home/mkammle/Calculations/Nickel/Fit2/energy_eq.dat
+eq_points_dft = /home/mkammle/Calculations/Nickel/Fit2/Eq_points_dft.dat
+md_tian_path = /home/theory/mxt/source/work_with_Skycruiser/md_tian_1021
+
+projectile_element = H
+projectile_mass = 1.0079
+lattice_element =  Ni
+lattice_mass = 58.693
+celldim = 2 2 6 x
+rep = 1 1
+evasp = -127.3035325
+lit_bulk_mod = 180
+lit_E0_metal = 4.44
+lit_C44 = 122
+lit_V0H = 0.427
+lit_zeta = 1.44
+static_lattice_points = 749
+trajectories = 001 002 003 004 005 006 007 008 009 010 011 012
+always_include_sites = 1 2 3 4 5 6 7 8 9 10
+
+nthreads = 64
+population = 300
+maxit = 30
+last_spawned_creature = 60000
+keep_fix = 10 11 14
+
+param_constraint = 2 40 20
+param_constraint = 7 15 20
+param_constraint = 9 40 20
+\end{verbatim}
+\caption{Exemplary input.sky file to use within the Skycruiser framework.}
+\label{SkycruiserInput}
+\end{figure}
+
+When this setup is complete, you need to tell Skycruiser where to find all these files and what run-time parameters to use. This is the purpose of a file called "input.sky". All tags have to be separated from their arguments by an equals sign. An exemplary input file is shown in Fig\,\ref{SkycruiserInput}. Mandatory and optional tags are \\
+\textbf{geometry\_file} must be the absolute path to the relaxed slab geometry file.\\
+\textbf{fitdata\_folder} must be the absolute path to the folder which holds the different AIMD trajectories in folders with the names "traj\%03d" of which the trailing integer part must be provided by the "trajectories" tag.\\
+\textbf{md\_tian\_path} must be the absolute path to the md\_tian executable.\\
+\textbf{energy\_eq} must be the absolute path to the "energy\_eq.dat" file.\\
+\textbf{eq\_points\_dft} must be the absolute path to the "Eq\_points\_dft.dat" file.\\
+\textbf{projectile\_fitparams\_file} must be the absolute path to the file holding the initial parameter set of the projectile.\\
+\textbf{lattice\_fitparams\_file} must be the absolute path to the file holding the initial parameter set of the surface.\\
+\textbf{projectile\_element} must be the chemical symbol of the projectile.\\
+\textbf{projectile\_mass} must be the mass of the projectile in atomic mass units.\\
+\textbf{lattice\_element} must be the chemical symbol of the lattice.\\
+\textbf{lattice\_mass} must be the mass of a lattice atom in atomic mass units.\\
+\textbf{celldim} must be the dimensions of the provided slab geometry file in <\textit{x}> <\textit{y}> <\textit{z}> dimensions.\\
+\textbf{rep} must be the repetition of the provided slab geometry file in \textit{x} and \textit{y} direction.\\
+\textbf{evasp} must be the overall reference energy meaning the "E0=" value of the DFT grid in which the H-atom is six angstroms above the surface, the slab is fully relaxed and spin is taken into account.\\ 
+\textbf{trajectories} must contain the "\%03d" part of the folders containing the AIMD trajectory information. See Fig\,\ref{SkycruiserInput} for more details.\\
+\textbf{static\_lattice\_points} must contain the number of configurations in your DFT energy grid.\\
+\textbf{nthreads} can be the number of threads you want to use, defaults to one.\\
+\textbf{population} can be the number of individuals per generation, defaults to one hundred.\\
+\textbf{maxit} can be the maximum number of optimization steps in the least squares fitting routine, defaults to 50.\\
+\textbf{last\_spawned\_creature} can be the number of the individual for which the last generation will be created, defaults to one million.\\
+\textbf{fuzzy\_input} can be the standard deviation of a normal distribution from which a number is drawn for each initial EMT parameter separately when the expectation value is the one provided in the projectile\_fitparams\_file or lattice\_fitparams\_file and the parameter is not being held constant. More precisely, the probability density is
+\begin{align*}
+  f(x|\mu,\sigma^2) = \frac{1}{\sqrt{2\sigma^2\pi}}e^{-\frac{(x-\mu)^2}{2\sigma^2}}
+\end{align*}
+with $\mu$ as the value given in the parameter file, and $\sigma$ as the number given in this tag in percent of $\mu$ (defaults to zero).\\
+\textbf{keep\_fix} can contain the parameters in the format "\%d" which Skycruiser must not change during the fit. 1-7 correspond to projectile parameters and 8-14 belong to the metal.\\ 
+\textbf{lit\_bulk\_mod} can contain the literature (target) bulk modulus. Additionally, the penalty-free deviation from this value can be specified as a second argument in percent of the first argument and defaults to 20. The penalty increase for each percent additional deviation from the bound given in the second argument can be set via the third argument and defaults to 10. All penalties in the program are determined by these three numbers and have the same general shape. See Fig.\,\ref{figPenaltyFunction} for more details.\\
+\textbf{lit\_C44} has the same input structure as "lit\_bulk\_mod" but constrains the shear elastic constant.\\
+\textbf{lit\_zeta} has the same input structure as "lit\_bulk\_mod" but constrains $\zeta$ defined in Eq.\,\ref{zeta}.\\
+\textbf{lit\_bondlength} has the same input structure as "lit\_bulk\_mod" but constrains the \textit{in vacuo} M-H bond length.\\
+\textbf{energy\_min} can contain the minimum interaction energy that shall be considered during the fit, defaults to -20.\\
+\textbf{energy\_max} can contain the minimum interaction energy that shall be considered during the fit, defaults to 20. This is to exclude absurd energies from the fit which result from the H-atom being very close to a surface atom in the DFT grid.\\
+\textbf{always\_include\_sites} can contain the symmetry sites of the DFT grid that will always be included in the fit in the format "\%d". The sites not included here will be treated as part of the genome and will be subject to crossover and mutation.\\
+\textbf{min\_dist\_to\_metal} can contain a lower limit for the H-metal atom distance and defaults to 0.1. If the H-atom comes closer to a surface atom than given by this tag, it will not be used for the fit. This excludes very large interaction energies from the fit which might occur in the DFT grid.\\
+\textbf{max\_dist\_from\_surface} can contain a number that describes the maximum distance between the H-atom and the surface and defaults to 6. If the H-atom is further away, any configuration/energy pairs will not be considered in the fit.\\
+\textbf{aimd\_weight} is a number between zero and one, defaults to 0.5, and determines the contribution of the validation data set to the fitness of the individuals. The basis for the fitness $F$ is the sum of the inverses of the RMSEs to the training and validation data set
+\begin{align*}
+	F \propto \frac{\alpha}{\9{RMSE}_\9{vd}} + \frac{(1-\alpha)}{\9{RMSE}_\9{td}}.
+\end{align*}
+As a default, both contributions are weighted equally. With this tag it is possible to unbalance the weights, more precisely, $\alpha$ can be directly set via this tag.\\
+\textbf{check\_esc} can be set to "False" to disable the verification of the elastic stability criteria which is activated by default
+\begin{align*}
+	C_{11} > 0,\qquad C_{44} > 0,\qquad C_{11} > |C_{12}|,\qquad (C_{11} + 2C_{12}) > 0.
+\end{align*}
+\textbf{param\_constraint} can be set to directly apply the penalty function to EMT parameters. The first number (1-14) describes the parameter which shall be considered. The second and third number work the same way as described in the "lit\_bulk\_mod" tag paragraph. Every parameter needs to be constrained in a separate tag as shown in the last lines of Fig.\,\ref{SkycruiserInput}.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.5\textwidth]{Figures/PenaltyFunction.png}
+\caption{General shape of the penalty applied to a constrained value. $x_k^0$ is the target value, $\Delta_k$ is the penalty-free region always specified in percent of $x_k^0$, and $p_k^m$ is the penalty per additional percent deviation from $\Delta_k$.}
+\label{surfacesites}
+\end{figure}
+
+
+\section{Output files}
+To monitor how the fit performs during run-time and also to extract good fits at the end of a run, Skycruiser prints to STDOUT and to several files. Screen output includes information about the creation and evaluation of individuals. Much more important, though, are the files in the "Stats" folder. Note that these files are not synchronized with the progress of the program. Since it launches its threads asynchronously, an evaluation of a generation as a whole may only be performed once all threads have come to a halt.\\
+\textbf{aimd\_contrib.txt} keeps track of the number of non-equilibrium configurations used in the training data. Each column represents a 10\% interval and one row gets created for each generation. Since Skycruiser handles the AIMD contribution to the training data set as a fraction of the total number of configurations present in the chosen trajectory, only relative values w.r.t this trajectory are displayed in this file. Absolute number are less interesting because trajectories may be based on different propagation times. For example, 37 in the second row, first column means, that 37 individuals in the second generation had 0-10\% of the configuration/energy pairs of the assigned trajectory included in the training data.\\
+\textbf{creature\_overview.txt} is probably the most important file in the output directory. It allows to delete the Population folder after the program has finished without losing essential information. This file contains all necessary information about all individuals including but not limited to their ID, fitness, RMSE and final EMT parameters.\\
+\textbf{energy\_grid\_sites.txt} has a structure similar to "aimd\_contrib.txt". Each row represents a generation and each column symbolizes one symmetry site. A 180 in the second row, third column means that 180 individuals in the second generation have symmetry site three included in their training data set.\\
+\textbf{held\_const.txt} has a structure similar to "aimd\_contrib.txt". Each row represents a generation and each column symbolizes one EMT parameter. The first seven integers belong to the projectile and the last seven to the metal. Each number describes how many individuals have held this parameter constant during the fit in this generation.\\
+\textbf{stats.txt} is the best file to monitor the convergence of the algorithm by plotting the generation against the highest creature fitness therein for example. A quick "cat stats.txt | sort -k4" displays the highest fitness together with the creature ID at the lowermost line. Also, this file shows the mean fitness of each generation and its standard deviation.\\
+\textbf{traj\_fit.txt} has a structure similar to "aimd\_contrib.txt". Each row represents a generation and each column symbolizes one AIMD trajectory. The numbers tell you how many times non-equilibrium geometries were take from that trajectory in a generation. For example, a 22 in the third row in the second column means that 22 individuals in the third generation used configuration/energy pairs from the second AIMD trajectory in their training data set.\\
+\textbf{out.txt} are files produced by Skycruiser which are not located in the "Stats" folder but in the individuals' folders in the "Population" folder. They contain the STDOUT output of md\_tian and are not essential for the analysis of a Skycruiser run, but for the Skycruiser program itself. It reads this file to learn how the local optimization routine has performed and to extract numbers of interest.\\
+\textbf{sky.log} is located in the working directory of Skycruiser. It contains all run-time parameters from "input.sky", AIMD trajectory information and errors encountered during execution.
+
+
+
+
+
 
 \chapter{Function of the single modules and subroutines}
-\section{atom\_class}
-\index{atom\_class}
-This model contains all parameters that cannot be changed during the execution of the program as well as some default values. This includes commonly used irrational numbers and physical constants and unit-conversion factors. Furthermore, the object atoms and its allocation defined which holds information such as the positions, velocities, forces \&c about the particle or the lattice.
 
-Also, the program's basic units \index{units} \index{program basic units} are defined. They are:\\
-Length: \AA\\
-Time: fs\\
-Energy: \\
-The program-derived units\index{program derived units} are:\\
-Mass: eV$\cdot$fs$^2$/\AA$^2$ = $1/103.6382$\,amu\\
-Angle: radian = 180$^\circ$\\
-bohr: 0.5291772\,\AA
-\section{dtrnlspbc}
-\index{dtrnlspbc}
-\todo{describe}
-\section{fit4tian}
-\index{fit4tian}
-This is the interface for the fitting routine. It contains the following subroutines:
-\textbf{fit}\\
-Here, the fit is prepared. The parameter files and the input into the fit are formed and information on the beginning and end of the fit are printed out. The non-linear least square algorithm with boundary constraints is prepared and called.
- 
-\textbf{dev2eqdft}\\
-Generates the dev2Eqdt$n$.dat output file of the fit. This file relates to the 3D-grid and for a fixed surface samples the ten surface sites starting from 6\,\AA~above the surface with whatever step and to whatever depth is defined in the Eq\_points\_dft.dat-file. Each position is followed by the potential energy calculated with the fit's parameter set at surface atoms frozen to their relaxed position for that position of the particle.
-\textbf{denseqdf}\\
-This routine is almost identical to the above, only instead of the potential energy, the denseqdft$n$.dat-file contains the background electron density at these positions.
-\textbf{dev2aimddft}\\
-\label{Sec:Function:f4t:dev2aimd}
-This routine produces the traj$n$\_1.dat file. This file is related to the AIMD-trajectories that are used in the input-data set and control data set for the fit. It contains the step of each trajectory followed by the potential energy from the DFT-simulations and then by the potential energy calculated with the fit parameters from the positions corresponding to the step.
 
-Furthermore, information on the fit (number, shear modulus, the H-metal bond formation energy, rms-error to the testing set (it consisting of all the AIMD-trajectories) and the parameter values) are printed into the c44rms.dat-file and information on the fit (rms-error to the testing set, elastic moduli) are printed out.
 
-\textbf{readinaimd}\\
-This routine is called up by the dev2aimddft-routine (see Sec.\,\ref{Sec:Function:f4t:dev2aimd}) and reads in the positions and energies of the XDATCAR.dat and analyse.dat files, respectively, of the AIMD trajectories. It proceeds to produce a $6\times6$ surface cell from the data so the EMT-routine can be used to calculate the energy from the AIMD positions.
+\chapter{Appendix}
 
-\textbf{restricted\_fit}\\
-\todo{restricted\_fit}
+\subsection{Sestra}
+\label{Sestra}
 
-\section{Force}
-\index{force}
-This module deals with the calculation of energies, forces and analytic derivatives of the PES usable in the program as well as the routine that calculates the friction coefficient from the local density. In general, the subroutines fall into three classes. The ones with a `1' at the end of the name deal with the calculation of only one species. Those with `\_e' at the end calculate only the energy without the forces and the ones with `d' (e.g. de or ddens) also includes routines to calculate the derivatives with respect to the parameters (see Tab.\,\ref{Tab:Funct:force}).
+\begin{lstlisting}
+### VERSION 0.11 ###
 
-\begin{table}[b!]
-\centering
-\caption{Subroutines in the force-module and what they calculate (BED = background electron density\index{BED}).\\
-$^{(1)}$ only next neighbors included.\\
-$^{(2)}$ calculated numerically.\\
-$^{(3)}$ calculates the friction coefficient from the BED.}
-\label{Tab:Funct:force}
-\begin{tabular}{lllllll}
-\hline\hline
-name			&No.	& energy	&forces			&BED		&parameter	& system\\
-&species&&&&derivatives&\\
-\hline
-emt				&2				&$\times$	&$\times$		&$\times$	&						&EMT\\
-emt\_e 			&2 				&$\times$	&				&$\times$	&						&EMT\\
-emt1			&1				&$\times$	&$\times$		&$\times$	&						&EMT\\
-emt1\_e 		&1				&$\times$	&				&$\times$	&						&EMT\\
-emt\_e\_fit 	&2 				&$\times$	&				&			&						&EMT\\
-emt\_de\_fit 	&2				&$\times$	&				&$\times$	&$\times$ (to energy)	&EMT\\
-emt\_dens\_fit	&2				&$\times$	&				&$\times$	&						&EMT\\
-emt\_ddens\_fit	&2				&$\times$	&				&$\times$	&$\times$ (to density)	&EMT\\
-emt1nn			&2				&$\times$	&$\times$		&$\times$	&						&EMT$^{(1)}$\\
-num\_emt		&2				&$\times$	&$\times^{(2)}$	&$\times$	&						&EMT\\
-num\_emt1		&1				&$\times$	&$\times^{(2)}$	&$\times$	&						&EMT\\
-ldfa			&1				&			&				&			&						&LDFA$^{(3)}$\\
-lj\_e			&2				&$\times$	&				&			&						&Lennard-Jones\\
-lj				&2				&$\times$	&$\times$		&			&						&Lennard-Jones\\
-lj1\_e			&1				&$\times$	&				&			&						&Lennard-Jones\\
-lj1				&1				&$\times$	&$\times$		&			&						&Lennard-Jones\\
+import sys, subprocess, time, shutil, re, math, time, os
 
-\hline
-\hline
-\end{tabular}
-\end{table}
+### START THIS BY EXECUTING "./Sestra.py <nProcessors>" ###
 
-In the LDFA subroutine, the friction coefficient is calculated from the local background electron density. The variable containing the local background electron density is then overwritten by the friction coefficient (in fs$^{-1}$). In case of simulated annealing a general friction coefficient of 3\,ps$^{-1}$ is assumed.
+### THESE NEED TO BE EVALUATED AND SET FOR EACH SYSTEM ###
+SPIN_ZONE_UPPER_LIMIT = 3.0
+SPIN_ZONE_LOWER_LIMIT = 1.6
 
-\section{md\_init}
-\index{md\_init}
-This module is a monster. Tab.\,\ref{Tab:Funct:mdinit} gives an overview over the subroutines in the module and their purpose. In general, this module serves as an initialization module for (almost) everything that goes into the program. Due to this reason, it starts with a large block of global variable that need to be used in other modules as well.
-\begin{table}[b!]
-\centering
-\caption{Subroutines in the md\_init module and their purpse.}
-\label{Tab:Funct:mdinit}
-\begin{tabular}{ll}
-\hline\hline
-name			&purpose			\\
-\hline
-simbox\_init & read input file, calls up dependent on \textit{confname}\\
-read\_conf&\\
-prep\_slab&\\
-prep\_teil&\\
-read\_mxt&\\
-read\_fit&\\
-traj\_init&\\
-particle\_init&\\
 
-\hline
-\hline
-\end{tabular}
-\end{table}
+def slog(s):
+    sestra_log.write("[" + time.strftime("%Y-%m-%d %H:%M:%S") + "] " + str(s) + "\n")
 
-\section{md\_tian}
-\index{md\_tian}
-This is the main program-file that calls up all other routines. It starts with calling the simbox\_init-routine to initiate the program and then calculates the reference energy. According to \textit{confname}, either fit or MD-routine are started. The first is started by calling up \textbf{fit4tian}, in the second case, the loop over the trajectories starts in the main program with initiating the species, followed by a loop over the time steps that calls up the propagators in \textbf{mdalgo} for the propagation of the trajectory. The routines for the output are also called here. Furthermore, the collectors for the number of bounces\index{bounces}, the collector (pEfric) for the energy loss to phonons (when md\_algo\_p = 3 or 4 (Langevin dynamics)) or to calculate electronic friction post facto (pEF, when md\_algo\_p = 5 (Verlet with pEF)), the collector for the lowest particle position and the routine that stops a trajectory when the particle has moved through the slab or scattered further back than 6.1\,\AA from the surface are to be found here.
+def stop_VASP(phandle):
+    print "VASP will be stopped after this iteration"; slog("VASP will be stopped after this iteration.")
+    stopcar = open("STOPCAR", "w")
+    stopcar.write("LSTOP = .TRUE.")
+    stopcar.close()
+    while phandle.poll() is None:
+        time.sleep(2)
+    print "VASP stopped"; slog("VASP stopped")
 
-MD-simulations are either the calculation of trajectories or simulated annealing. The decision between the former and latter is controlled by the variable \textit{sasteps} that also controls when the surface temperature during the simulated annealing is to be lowered or raised.
+def start_VASP(np):
+    print "VASP started with", np, "processors"; slog("VASP started with %02d processors" % int(np))
+    phandle = subprocess.Popen(["mpirun", "-n", np, "vasp"])
+    return phandle
 
-The number of bounces is calculated by finding maxima in the background electron density. The reasoning behind this is that if a particle gets close to a surface atom, the electron density must rise; it will peak when the particle is closest to the surface atom. To avoid double-counting of maxima due to fluctuations in the BED, a bounce is only counted if the minimum between two maxima is larger than 0.025\,\AA$^{-3}$. This is not a perfect way to count the number of bounces, but the best we could come up with so far.
+def restart_VASP(curr_iter, np, OSZICAR_STEP):
+    print "Restarting VASP"; slog("Restarting VASP")
+    
+    xdat = open("XDATCAR", "r")
+    for line in xdat:
+        pass
+    old_proj_pos = float( line.strip("\n\r\t ").split()[2] ) * LATTICE_CONSTANT * CELL_IN_Z
+    xdat.close()
+    
+    oszicar = open("OSZICAR", "r")
+    curr_oszicar_step = 0
+    req_elec_steps = 0
+    for line in oszicar:
+        if "T=" in line:
+            curr_oszicar_step = int(line.strip("\n\t\r ").split()[0])
+        elif "RMM" in line:
+            req_elec_steps = int(line.strip("\n\t\r ").split()[1])
+    oszicar.close()
+    
+    if req_elec_steps >= VASP_NELM:
+        print "[WARNING] ionic step %04d did not converge" % (OSZICAR_STEP + curr_oszicar_step)
+        slog("[WARNING] ionic step %04d did not converge. Use CONTCAR_%04d to rerun this step." \
+            % ((OSZICAR_STEP + curr_oszicar_step - 1), (curr_iter - 1)) + " Also check next step(s)."  )
+    
+    shutil.copy2("CONTCAR", "POSCAR")
+    shutil.copy2("CONTCAR", "CONTCAR_%04d" % curr_iter)
+    shutil.copy2("OSZICAR", "OSZICAR_%04d" % curr_iter)
+    shutil.copy2("XDATCAR", "XDATCAR_%04d" % curr_iter)
+    phandle = start_VASP(np)
+    OSZICAR_STEP += curr_oszicar_step
+    slog("Restarted at step %04d" % OSZICAR_STEP)
+    return phandle, old_proj_pos, OSZICAR_STEP
+    
 
-At the end, there are some lines commented out that make it possible to calculate the timing  of the program if they are commented in again.
+# initialize globals
+sestra_log = open("sestra.log", "w")
+OSZICAR_STEP = 1    # one-based b/c VASP is
+VASP_ITERATION = 0
+VASP_NSW = None
+VASP_NELM = None
+LATTICE_CONSTANT = None
+CELL_IN_Z = None
+SPIN_RELEVANT = True
 
-\section{mdalgo}
-\index{mdalgo}
-This routine contains the propagation algorithms divided into their first (propagator\_1) and second step (propagator\_2). Those algorithms are: the Verlet Algorithm\,\cite{allen1989}, the Beeman-Refson Algorithm\,\cite{refson1985}, the Langevin algorithm\,\cite{allen1989} with exact formulae and with approximate formulae (langevin and langevins). We have tried both exact and approximate algorithm, but our general recommendation is to use the exact Langevin algorithm. Lastly, the module contains a routine that calculates the accelerations from the forces.
+try:
+    os.remove("XDATCAR")
+except OSError:
+    pass
+try: os.remove("OSZICAR")
+except OSError:
+    pass  
 
-\section{model and nllsq.f}
-\index{model}
-\index{nllsq.f}
-These modules is obsolete and should no longer exist; they are the first routines we used to calculate the non linear least square fitting routines. If you have them, you may keep them for reasons of nostalgia, but we would recommend not using them. Or if you have no Intel Fortran Compiler, but then, you will need to modify the code to include them (which you naturally may).
-\section{open\_file}
-\index{open\_file}
-This module contains the subroutines responsible for reading, writing and appending to files. Those subroutines are meant to facilitate the opening of files and print corresponding error messages that make file-opening errors more comprehensible.
+# initialize number of processors
+NPROCESSORS = "1"
+try:
+    NPROCESSORS = sys.argv[1]
+except IndexError:
+    print "You did not specify the number of processors that VASP is allowed to use."
+    print "USAGE: python SestraX.XX.py num_proc\nContinuing serially..."
+    pass
 
-\section{output}
-\index{output}
-Here, the output-files are written. Please see also Sec.\,\ref{Sec:mxt:output} and for the files that each subroutine gives rise to Tab.\,\ref{Tab:Funct:output}. The only routine in this module that does not lead to any output files is the \textit{sartre}-function which checks if a trajectory has been calculate before. It skips all but the last already calculated trajectory and recalculates the last before it continues with the next.
+# check if extra spin safety is required
+RUN_EXTRA_SAFE = False
+additional_arg = None
+try:
+    additional_arg = sys.argv[2]
+except IndexError:
+    pass
+if additional_arg == "-extra_safe":
+    RUN_EXTRA_SAFE = True
 
-\begin{table}[b!]
-\centering
-\caption{Subroutines in the output module and the output files they produce.}
-\label{Tab:Funct:output}
-\begin{tabular}{lll}
-\hline\hline
-name			&file name			& file size\\
-\hline
-full\_conf		&mxt\_conf$n$.bin	&medium\\
-out\_short		&mxt\_fin$n$.dat 	&small\\
-out\_detail		&mxt\_trj$n$.dat	&medium\\
-out\_all		&mxt\_conf$xyz$.dat	&large\\
-out\_poscar		&mxt\_anneal.POSCAR	&small\\
-out\_posvel		&mxt\_rv$n$.dat		&large\\
-out\_pdb		&mxt\_conf$n$.pdb	&medium\\
-\hline
-\hline
-\end{tabular}
-\end{table}
+# save initial POSCAR
+shutil.copy2("POSCAR", "POSCAR_INITIAL")
 
-\section{useful\_things}
-\index{useful\_things}
-This module contains useful subroutines returning random numbers, a normal function, turning input into lower-case characters, calculating the normed distance between two vectors, calculating the kinetic energy, periodic boundary conditions and a routine that counts the lines in a file.
+# find lattice constant from second line in POSCAR file
+try:
+    fh = open("POSCAR", "r")
+except IOError:
+    sys.exit("No POSCAR file found."); slog("No POSCAR file found.")
+    
+for line in fh:
+    line = fh.next()
+    LATTICE_CONSTANT = float( line.strip("\n\r\t ") )
+    line = fh.next(); line = fh.next(); line = fh.next()
+    CELL_IN_Z = float( line.strip("\n\r\t ").split()[2] )
+    break
+fh.close()
+
+# find maximum number of ionic steps
+incar = open("INCAR", "r")
+for line in incar:
+    if "NSW" in line and VASP_NSW == None:
+        VASP_NSW = int(line.split("=")[-1].strip("\n\r\t "))
+        slog("VASP NSW read as %04d" % VASP_NSW)
+    elif "NELM" in line and VASP_NELM == None:
+        VASP_NELM = int(line.split("=")[-1].strip("\n\r\t "))
+        slog("VASP NELM read as %04d" % VASP_NELM)
+incar.close()
+
+curr_oszicar_step = 0
+new_proj_pos = None
+proj_pos = None
+going_up = False
+phandle = start_VASP(NPROCESSORS)
+    
+while phandle.poll() is None:
+    # wait for some work to be done
+    #print ""    #; slog(" ")
+    time.sleep(30)
+    #print ""    #; slog(" ")
+        
+    # look at last projectile position
+    line = None
+    try:
+        xdatcar = open("XDATCAR", "r")
+    except IOError:
+        print "Couldn't open XDATCAR"; slog("Couldn't open XDATCAR")
+        continue
+
+    try:
+        for line in xdatcar:
+            pass
+    except NameError:
+        continue
+    
+    try:
+        new_proj_pos = float( line.strip("\n\r\t ").split()[2] ) * LATTICE_CONSTANT * CELL_IN_Z
+    except (IndexError, AttributeError):
+        if proj_pos == None:
+            print "Couldn't read projectile position. This is expected if this is your first ionic step."
+            print "Else, there's something wrong with your XDATCAR file."
+            slog("Couldn't read projectile position. This is expected if this is your first ionic step.")
+            slog("Else, there's something wrong with your XDATCAR file.")
+        continue
+    
+    # compare to last projectile position
+    if new_proj_pos != None:
+        if proj_pos != None:
+            if proj_pos - new_proj_pos < 0:
+                going_up = True
+            elif proj_pos - new_proj_pos > 0:
+                going_up = False
+            else:
+                # H atom position has stayed the same. Continue.
+                continue
+            print "Going up", going_up; slog("Going up " + str(going_up))
+            
+        proj_pos = new_proj_pos + 0.0
+        new_proj_pos = None
+        
+    if proj_pos != None:
+        print "H atom position read as", proj_pos; slog("H atom position read as %6.5f" % proj_pos) 
+        
+
+    # extract current OSZICAR step
+    curr_oszicar_step = 0
+    oszicar = open("OSZICAR", "r")
+    for line in oszicar:
+        if "T=" in line:
+            curr_oszicar_step = int(line.strip("\n\t\r ").split()[0])
+    oszicar.close()
+    
+    
+    print "Current ionic step", (OSZICAR_STEP + curr_oszicar_step)
+    slog("Current ionic step %04d" % (OSZICAR_STEP + curr_oszicar_step))
+    slog("VASP ITERATION IS %04d" % VASP_ITERATION)
+
+
+    ## decide what to do ##
+    # trajectory finished
+    if 6.1 < proj_pos <= 7:
+        print "Projectile above starting position. Finish!"
+        slog("Projectile above starting position. Finish!")
+        stop_VASP(phandle)
+        slog("Job's done."); break
+        
+    if (OSZICAR_STEP + curr_oszicar_step) >= VASP_NSW:
+        print "Maximum ionic reached. Finish!"
+        slog("Maximum ionic reached. Finish!")
+        stop_VASP(phandle)
+        slog("Job's done."); break
+
+    # if projectile transitions from spin-relevant region into bulk: turn off spin, then restart
+    if SPIN_RELEVANT and proj_pos != None and proj_pos < SPIN_ZONE_LOWER_LIMIT and not going_up:
+        print "Transition from spin-relevant region into Bulk."
+        slog("######################################################")
+        slog("#   Transition from spin-relevant region into bulk   #")
+        slog("######################################################\n")
+        SPIN_RELEVANT = False
+        slog("Spin relevant is set to " + str(SPIN_RELEVANT))
+        print "Spin relevant is set to", SPIN_RELEVANT
+        subprocess.call(["sed", "-i", "s/ISPIN *= *2/ISPIN = 2/", "INCAR"])
+        stop_VASP(phandle)
+        phandle, proj_pos, OSZICAR_STEP = restart_VASP(VASP_ITERATION, NPROCESSORS, OSZICAR_STEP)
+        VASP_ITERATION += 1
+        continue
+
+    # if projectile transitions from bulk into spin-relevant region: turn on spin, then restart
+    if not SPIN_RELEVANT and SPIN_ZONE_LOWER_LIMIT <= proj_pos < 6. and going_up:
+        print "Transition from bulk into spin-relevant region."
+        slog("######################################################")
+        slog("#   Transition from bulk into spin-relevant region   #")
+        slog("######################################################\n")
+        SPIN_RELEVANT = True
+        slog("Spin relevant is set to " + str(SPIN_RELEVANT))
+        print "Spin relevant is set to", SPIN_RELEVANT
+        subprocess.call(["sed", "-i", "s/ISPIN *= *2/ISPIN = 2/", "INCAR"])
+        stop_VASP(phandle)
+        phandle, proj_pos, OSZICAR_STEP = restart_VASP(VASP_ITERATION, NPROCESSORS, OSZICAR_STEP)
+        VASP_ITERATION += 1
+        continue
+            
+    # in danger zone
+    if going_up and (SPIN_ZONE_LOWER_LIMIT <= proj_pos < SPIN_ZONE_UPPER_LIMIT) and not RUN_EXTRA_SAFE:
+        print "Projectile is fleeing the Bulk and in spin-critical region."
+        slog("Projectile is fleeing the Bulk and in spin-critical region.")
+        stop_VASP(phandle)
+        phandle, proj_pos, OSZICAR_STEP = restart_VASP(VASP_ITERATION, NPROCESSORS, OSZICAR_STEP)
+        VASP_ITERATION += 1
+        continue
+    
+    if RUN_EXTRA_SAFE and (SPIN_ZONE_LOWER_LIMIT <= proj_pos < SPIN_ZONE_UPPER_LIMIT):
+        if not going_up:
+            print "[EXTRA SAFE]: Projectile is approaching the Bulk in spin-relevant region."
+            slog("[EXTRA SAFE]: Projectile is approaching the Bulk in spin-relevant region.")
+        else:
+            print "[EXTRA SAFE]: Projectile is fleeing the Bulk and in spin-relevant region."
+            slog("[EXTRA SAFE]: Projectile is fleeing the Bulk and in spin-relevant region.")
+        stop_VASP(phandle)
+        phandle, proj_pos, OSZICAR_STEP = restart_VASP(VASP_ITERATION, NPROCESSORS, OSZICAR_STEP)
+        VASP_ITERATION += 1
+        continue
+    
+print "Trajectory finished."
+slog("Trajectory finished.")
+shutil.copy2("OSZICAR", "OSZICAR_%04d" % VASP_ITERATION)
+shutil.copy2("XDATCAR", "XDATCAR_%04d" % VASP_ITERATION)
+shutil.copy2("CONTCAR", "CONTCAR_%04d" % VASP_ITERATION)
+VASP_ITERATION += 1
+sestra_log.close()
+
+# Merge OSZICARs
+comb_oszicar = open("comb_OSZICAR", "w")
+oszi_step = 1
+for i in range(VASP_ITERATION):
+    seq_oszicar = open("OSZICAR_%04d" % i, "r")
+    for line in seq_oszicar:
+        if "T=" in line:
+            orig_step = line.strip(" \n\r\t").split()[0]
+            # adjust ionic step
+            line = re.sub(r"[0-9]* T=", str(oszi_step) + " T=", line)        
+            # adjust spacing at beginning of line if log10(orig_step)!=log10(oszi_step)
+            for i in range(len(str(oszi_step))-len(orig_step)):
+                line = re.sub(r"^ ", "", line)   
+            oszi_step += 1
+        comb_oszicar.write(line)
+    seq_oszicar.close()
+comb_oszicar.close()
+
+# Merge XDATCARs
+comb_xdatcar = open("comb_XDATCAR", "w")
+xdat_step = 1
+written_xdatcar_header = False
+for i in range(VASP_ITERATION):
+    seq_xdatcar = open("XDATCAR_%04d" % i, "r")
+    if written_xdatcar_header:
+        for j in range(7):
+            line = seq_xdatcar.next()
+    for line in seq_xdatcar:
+        if "Direct configuration" in line:
+            written_xdatcar_header = True
+            line = re.sub(r"[0-9]{1,}", str(xdat_step), line)
+            line = re.sub(r"= *", "=", line)
+            for j in range(5-int(math.log10(xdat_step))):
+                line = re.sub(r"=", "= ", line)
+            xdat_step += 1
+        comb_xdatcar.write(line)
+    seq_xdatcar.close()
+comb_xdatcar.close()   
+\end{lstlisting}
+
+
 
 \printindex
 \bibliography{theory_group} %"bib" ist der name der datei, die man angelegt hat!! 
