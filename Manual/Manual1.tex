@@ -1,0 +1,721 @@
+\documentclass[twoside, 11pt, titlepage, captions=nooneline, a4paper, headsepline]{scrbook}%was fr ein Dokument das ist
+\usepackage[english]{babel}% ngerman sorgt dafr, dass Text auf Deutsch
+\usepackage{graphicx}%Graphiken einfgen
+\usepackage[T1]{fontenc}%schriftart
+\usepackage{textcomp}%umlaute
+\usepackage[hang,small,bf,justification=justified,singlelinecheck=false]{caption}% berschriften dick& klein, links
+\usepackage[version=3]{mhchem}%chemiegraphiken
+\usepackage[utf8]{inputenc}%macht  sichtbar
+\usepackage{upgreek}%sorgt dafr, dass griechische Buchstaben im Mathemodus nicht kursiv erscheinen
+\linespread{1.3} % 1,5facher Zeilenabstand
+\usepackage[numbers,square]{natbib} %sorgt dafr, dass Zitate eingefgt werden knnen
+\bibliographystyle{ChemEurJ} %mit "unsrtdin" statt "plaindin" werden die referenzen in der Reihenfolge des auftretens im text aufgelistet; "angewneu" ist im stil der angewandten, "achemso" noch ein anderer
+\usepackage{CJKutf8} %chinese characters
+%create hyperlinks in document
+\usepackage{hyperref}
+
+\title{\huge{MD Tian Xia}}
+\author{\textbf{Manual}\\ \\Sascha Kandratsenka and Svenja M. Janke}
+\publishers{Institute of Physical Chemistry\\ Georg-August Universität Göttingen\\ Max Planck Institute for Biophysical Chemistry, Göttingen.}
+\date{}
+
+
+
+
+\begin{document}
+\frontmatter
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+\tableofcontents
+\newpage
+%\chapter{Theory}
+%\section{The Algorithms}
+%\subsection{Langevin Algorithm}
+%etc
+
+\mainmatter
+
+\chapter{Input}
+\section{The md\_tian.inp File}
+The input file is called `Md\_tian.inp'. A signal word must be given before the desired value is specified. Please keep in mind that the signal words should be entered in the way displayed in the default examples below. The following signal words exist:\\
+
+\subsection*{aimd}
+Structure: aimdlu, dismima\\
+Usage: aimd -20.0 20.0 -0.1 10.0\\
+This Flag controls for the fit how the AIMD trajectories should be included into the fit; what is the lowest/maximal energy they are allowed to have and what is the lowest/maximal distance they may have to the atoms/surface
+\subsubsection*{dftlu}
+Type: Real,Array\\
+Default: -e\_max +e\_max\\
+Default: -20.0d0 +20.0d0\\
+This flag specifies which potential energy an H-atom may minimally and maximally have during the fit. It needs to be set if the flag 'aimd' is used, so make sure to take the default values if you do not want to consider it.
+\subsubsection*{dismima}
+Type: Real,Array\\
+Default: 0.0d0 7.0d0\\
+This flag specifies which distance an H-atom may minimally have to any surface atom or which distance it may maximally have to the atoms of the first layer. It has to be set if the flag 'aimd' is used, so make sure to take the default values if you do not want to consider it.
+
+%\subsection{aimd}
+%Type: Integer\\
+%Usage: 200 200\\
+%This flag only needs to be specified if you conduct a fit. aimd(1) sets the number of (lattice)-equilibrium geometries and aimd(2) the number of (lattice)-non-equilibrium geometries that will be used in the fit.
+
+\subsection*{anneal}
+Type: Real, Integer\\
+Structure: anneal, Tmax, tduration\\
+Usage: anneal 300, 5000\\
+This option makes it possible to perform simulated annealing. The first number given after the keyword corresponds to the maximal temperature at which the annealing should be done. The second number corresponds number of steps taken in each annealing interval. The lowest temperature of the annealing has to be specified with \emph{Tsurf} and the number of steps in the annealing interval will be calculated from \emph{nsteps}.\\
+The annealing starts at \emph{Tsurf}, then goes up in $nstep/(2\cdot tduration)$ intervals to \emph{Tmax} and then goes down again to \emph{Tsurf}.
+
+\subsection*{azimuth}
+Type: Real\\
+Default: azimuth 0 \\
+Usage: azimuth 0 \\
+This variable determines the azimuth angle. 60 corresponds to the $\left[10\overline1\right]$ direction, 90 to $\left[11\overline2\right]$.
+
+\subsection*{celldim}
+Type: Integer\\
+Default: celldim 2 2 4 \\
+Usage: celldim 2 2 4 none \\
+This flag is necessary if you want to produce a slab from an already existing slab. It informs the program about the cell size of your input slab. Thus, the first integer describes the number of atoms of the first layer in x- direction, the second into y-direction and the last the number of layers.\\
+The flag \emph{none} is required if you do not wish to invoke the special option
+Special option:\\
+\subsubsection*{atlayer}
+Type: Integer\\
+Usage: celldim 2 2 4 atlayer 23 22 22 22\\
+If the number of atoms is not constant in all of the layers and you want to replicate your initial geometry, this flag needs to be specified. \\
+It is allocated according to the number of layers specified in \emph{celldim} and reads in the number of atoms for each layer. This flag is especially useful if there are vacancies, ad-atoms on the surface or surface reconstructions that have additional or fewer atoms than the perfect surface.\\
+Example:\\
+A 2x2x4 unitcell with one ad-atom on the surface.\\
+\emph{celldim} 2 2 5 \emph{atlayer} 1 4 4 4 4\\
+\emph{rep} 2 2\\
+Now, a 10x10x4-supercell will be created with a surface coverage of 1/4th.
+
+
+\subsection*{conf}
+\label{inputfiles1}
+Usage: conf confname confname\_file (n\_confs) (fitnum) (conf\_nr)\\
+This flag defines the starting configuration you will be using.
+\subsubsection*{confname}
+Type: Character\\
+Default: none\\
+At present, three possibilities exist for this keyword: `POSCAR', `mxt', `geo' and `fit'. If you specify the option `POSCAR', your input file must have the appearance of a VASP-POSCAR file. The option `mxt' will read in the program's own mxt-output files at random. With `geo', it is possible to choose the number of the mxt-output file that should be read in. These files are binary files and will be created automatically, depending on the options given for the \emph{wstep} flag (cf. wstep). `fit' can be used to do a non-linear-least-square fit to obtain new parameters.
+\subsubsection*{confname\_file}
+Type:Character\\
+Default: none\\
+For option `POSCAR' please enter here the directory and name of your read-in file. For option `mxt' please enter here only the directory of your read-in file. For `fit', you need to specify the POSCAR-file that will generate the equilibrium positions. It is mandatory to use the equilibrium positions in the POSCAR-file since this geometry will be used to calculate the reference energy.
+\subsubsection*{n\_conf}
+Type: Integer\\
+Default: 1\\
+This flag does not need to be specified for option `POSCAR'.
+For `mxt', if you specify this flag, the program will choose a random file out of the first \emph{n\_conf} files in \emph{confname\_file}-directory. This flag is particularly handy if you would like to do your MD-calculations with slabs of different configurations.\\
+For `fit', this flag specifies the number of the trajectory whose geometries are taken to fit to the off-equilibrium positions.
+\subsubsection*{fitnum}
+Type: Integer\\
+Default: none\\
+This flag is only applied to option `fit' and specifies the fit number. This number will be added to the output-files in order to distinguish them from other fits.
+\subsubsection*{conf\_nr}
+Type: Integer\\
+Default: none\\
+With this flag in combination with the option `geo', a specific mxt-input-file can be read in.
+
+\subsection*{3Dgrid}
+Structure:dftlu, nsites, sitenames\\
+Usage: -20.0, 20.0, 10, 1 2 3 4 5 6 7 8 9 10\\
+This Flag controls which sites from the 3Dgrid are to be included into the fit.
+\subsubsection*{dftlu}
+Type: Real,Array\\
+Default:-e\_max +e\_max\\
+\subsubsection*{nsites}
+Type: Integer\\
+Default: 0\\
+This flag specifies the number of symmetry sites on the surface that are to be included into the fit. It is used to allocate ssites.
+
+\subsubsection*{ssites}
+Type: Integer, allocatable\\
+ssites contains the number to each of the symmetry sites on the surface that shall be part of the fit. It is allocated with \textit{nsites}.
+
+
+
+\subsection*{Einc}
+Type: Real\\
+Default: Einc 5\\
+Usage: Einc 5\\
+Here, you can specify the incidence energy in electron volts.
+
+\subsection*{evasp}
+Type: Real\\
+Default evasp -24.995689d0 \\
+Usage: evasp -24.995689d0 \\
+This flag specifies the reference energy of your input system. It is mandatory if you want to obtain new emt-parameters from a fit. For a fit, you need the energy of the lattice (and the particle) and their coordinates as well as a reference energy. For EMT, we use the energy of the projectile 6.0\,\AA above the equilibrium lattice surface as reference energy. So, for any fit, you need to calculate the reference energy by setting your projectile(s) 6.0\,\AA above the equilibrated surface. The surface you use to calculate the geometry must have the same dimensions as the surface of the geometries you want to input into the fit.
+
+\subsection*{fitconst}
+Type: Integer\\
+Usage: fitconst 4 1 4 7 14\\
+This flag only needs to be set if you do a fit. fitnum(1) specifies the number of parameters that are held constant during the fit. It is followed by the number of each fitting parameter you want to hold constant. The numbers of the fitting parameters are:
+\begin{table}[h!]
+\centering
+\caption{Fit parameters and their corresponding number.}
+\label{fitconst}
+\begin{tabular}{p{2cm}p{5cm}p{5cm}}
+\hline\hline
+Parameter& No (projectile) & No (lattice)\\
+\hline
+$\eta_2$ & 1 & 8\\
+$n_0$ & 2 & 9 \\
+$E_0$ & 3 & 10 \\
+$\lambda$ & 4 & 11 \\
+$V_0$ & 5 & 12 \\
+$\kappa$ & 6 & 13 \\
+$s_0$ & 7 & 14 \\
+\hline
+\end{tabular}
+\end{table}
+We recommend to hold $E_0$ and $s_{0}$ constant during the fit. $E_0$ corresponds to the cohesive energy of the species and $s_0$ to its neutral-sphere radius. $E_0$ should be set to the experimental values. $s_0$ can be calculated from the next-neighbour distance $r_eq$ in the fcc-bulk at equilibrium according to:
+\begin{equation}
+s_0 = \frac{\sqrt{2}\cdot r_{eq}}{\sqrt[3]{\frac{16 \pi}{3}}}
+\end{equation}
+\subsection*{fitmix}
+Type: Integer\\
+Usage: fitmix 700 200\\
+This flag specifies how many 3D-grid (first) and how many points from the AIMD trajectory are to be used in the fit.
+
+\subsection*{inclination}
+Type: Real\\
+Default: inclination 0\\
+Usage: inclination 0\\
+This variable specifies the angle with the surface normal.
+
+\subsection*{lattice}
+Usage: lattice name mass pot parameters key algorithm Number\_of\_fixed\_atoms
+\subsubsection*{name}
+Type: Character\\
+Default: Elyrium\\
+The flag specifies the name of the projectile.
+\subsubsection*{mass}
+Type: Real\\
+Default: 1.0 (in amu)\\
+The mass is necessary to solve Newton's equations in the propagation.
+%\subsubsection{pot}
+%Type: Character\\
+%Default: emt\\
+%This flag defines the potential that is used. At the moment, only the EMT-potential is implemented.
+\subsubsection*{parameters}
+Type: Integer \\
+Default: 0\\
+The number of parameters for the chosen potential needs to be specified here. In case of the EMT-potential, there are seven parameters per species.
+\subsubsection*{key}
+Type: Character\\
+Default: 'empty'\\
+Here, the file name of the parameter file has to be given for read in.
+\subsubsection*{algorithm}
+Type: Character\\
+Default: none\\
+This flag determines with which algorithm the projectile will be propagated. If no algorithm is given, then no projectile will considered. The available algorithms are given in Tab.\,\ref{algo1}.\\
+\begin{table}[h!]
+\centering
+\caption{Options for algorithm.}
+\label{algo1}
+\begin{tabular}{p{2cm}p{11cm}}
+\hline\hline
+Option&Explanation\\
+\hline
+ver & The Verlet Algorithm\\
+bee & The Beeman Algorithm (an variant of the Verlet Algorithm that is more stable)\\
+lan & The exact Langevin algorithm. Electronic friction will be included.\\
+sla & The equations of the Langevin algorithm will be approximated in series up to second order.\\
+pef& Post Electronic Friction. The trajectory is propagated adiabatically but the loss the friction is calculated along the way. Output in the mxt\_fin-files.\\
+\hline
+\end{tabular}
+\end{table}
+\subsubsection*{Number\_of\_fixed\_atoms}
+Type: Integer\\
+Default: -1\\
+This flag is the only difference between the flag used for the particle and the lattice. It specifies how many atoms should be excluded from motion, i.e. fixed in their position. A negative number signifies the number of layers that should be held fixed, starting from the lowest level, with a positive number, the precise number of atoms that should be moved can be specified. Therefore, the default option fixes the atoms of the lowest layer. Unless bulk-calculations are done, we do not recommend to let all lattice atoms move since this will lead to a translation motion of the lattice.
+
+\subsection*{nsteps}
+Type: Integer\\
+Default: nsteps 100\\
+Usage: nsteps 100\\
+The number of steps for which the trajectory will be propagated.
+
+\subsection*{ntrajs}
+Type: Integer\\
+Default: ntrajs 10\\
+Usage: ntrajs 1000\\
+This variable determines how many trajectories are going to be calculated
+
+\subsection*{pip}
+Usage: pip pipsign (height) keyword\\
+The command pip allows to set the position of a particle manually. This flag should be used as follows
+\subsubsection*{pipsign}
+Type: Integer\\
+Default: -1\\
+The possible options are:\\
+\begin{table}[H!]
+\centering
+\caption{Options for \emph{pipsign}.}
+\label{pip1}
+\begin{tabular}{p{2cm}p{11cm}}
+\hline\hline
+Option&Explanation\\
+\hline
+-1 & Readin from configuration file. Default.\\
+0 & Only one projectile will be considered. A random position is chosen. \\
+1 & One Projectile. The coordinates of impact at 0\,\AA~are chosen via \emph{keyword}.\\
+2 & Positions for projectile are read in from extra file. Set \emph{keyword} to filename\\
+3 & One Projectile. The coordinates of start are chosen via \emph{keyword}.\\ 
+\hline
+\end{tabular}
+\end{table}
+\subsubsection*{height}
+Type: Real\\
+Default: 6.0\\
+The distance of the projectile to the surface in \AA ngström. This flag only needs to be specified if you want a height other than 6.0.
+\subsubsection*{keyword}
+Type: Character\\
+Default: top\\
+If \emph{pipsign} 0, it is possible to set the projectile's x-y-positions to certain symmetry sites (Tab.\,\ref{pips-keyword}).
+\begin{table}[H!]
+\centering
+\caption{Options for \emph{keyword} under \emph{pipsign}}
+\label{pips-keyword}
+\begin{tabular}{p{2cm}p{11cm}}
+\hline\hline
+Option&Explanation\\
+\hline
+top& Top site, i.e. xy-position of surface atom in middle of slab\\
+fcc& Face-centred cubic hollow site.\\
+hcp& Hexagonal closed packed hollow site.\\
+bri& Bridge site, i.e. xy-position of the middle of the connecting line between two adjacent surface atoms.\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{projectile}
+Usage: projectile name mass pot parameters key algorithm number\_of\_projectiles\\
+The flag `projectile' is optional. If it is not given, no projectile will be specified or, if the configuration file contains a particle, will be read in from the configuration file.\\
+Particles cannot be fixed.\\
+\subsubsection*{name}
+Type: Character\\
+Default: Elyrium\\
+The flag specifies the name of the projectile.
+\subsubsection*{mass}
+Type: Real\\
+Default: 1.0 (in amu)\\
+The mass is necessary to solve Newton's equations in the propagation.
+\subsubsection*{pot}
+Type: Character\\
+Default: emt\\
+This flag defines the potential that is used. At the moment, only the EMT-potential is implemented.
+\subsubsection*{parameters}
+Type: Integer \\
+Default: 0\\
+The number of parameters for the chosen potential needs to be specified here. In case of the EMT-potential, there are seven parameters per species.
+\subsubsection*{key}
+Type: Character\\
+Default: 'empty'\\
+Here, the file name of the parameter file has to be given for read in.
+\subsubsection*{algorithm}
+Type: Character\\
+Default: none\\
+This flag determines with which algorithm the projectile will be propagated. If no algorithm is given, then no projectile will considered. The available algorithms are listed in Tab.\,\ref{algo1}.
+In the program, the character variable will be turned into an integer variable.
+\subsubsection*{number\_of\_projectiles}
+Type: Integer\\
+Default: 0\\
+The particle number that is given in the input file overrules all over particle specifications. The only exceptions are when \emph{pip} 1 or \emph{conf POSCAR} is specified. In the latter case, if 0 is given in the input file, the hydrogen atom will be multiplied together with the slab according to the flag \textit{rep}.
+
+\subsection*{pes}
+Type: Character\\
+Default: emt\\
+Usage: pes emt\\
+This option determines the potential that is going to be used during the propagation. In future, we would like to include the usage of the lennard-jones potential as well as several neighbour options.
+
+\subsection*{rep}
+Type: Integer\\
+Default: 2 2\\
+Usage: rep 2 3\\
+\emph{rep} informs the program on how many times the input lattice should be repeated in rep(1) = x-direction and in rep(2) = y-direction. This flag only works in combination with \emph{celldim} and \emph{conf}. \emph{conf} has to be set to POSCAR.\\
+Please bear in mind that \emph{rep} results in repeating the slab in xy-direction \emph{rep} times. That means that, if you start out with a 2x2x4 cell and set \emph{rep} to 1, your resulting cell will be 6x6x4. Likewise, \emph{rep} 2 will result in a 10x10x4 cell etc.
+
+\subsection*{start\_tr}
+Type: Integer\\
+Default: start\_tr 1\\
+Usage: start\_tr 1\\
+Number of starting trajectory.
+
+\subsection*{step}
+Type: Real\\
+Default: step -1.0\\
+Usage: step 0.1\\
+The step in which the atoms are propagated.\\
+Specify unless you read in a configuration file and want to use the step from this file.
+
+\subsection*{Tsurf}
+Type: Real\\
+Default: Tsurf 300\\
+Usage: Tsurf 300\\
+Specifying this variable will overwrite the temperature given in the configuration file or determine the temperature your lattice will equilibrate to.
+
+\subsection*{trajname}
+Usage: trajname 13 005 010 801 814 817 818 820 821 825 831 832 833 858\\
+Number of AIMD trajectories that have been calculated for the fit followed by their identification. The name of a trajectory consists of 'traj' followed by the three-digit identification that is specified here.
+
+\subsubsection*{trajn}
+Type: Integer\\
+Default: 0\\
+Specifies the number of AIMD trajectories to which the fit shall be compared.
+
+\subsubsection*{trajname}
+Type: Allocatable Character of Length trajn\\
+Default: none\\
+Gives the identification of the trajectories.
+
+\subsection*{wstep}
+Type: Integer, Array\\
+Default: wstep $-1$ 1\\
+Usage: wstep $-1$ 1\\
+This parameter determines the way and the interval in which the data is saved. For the default, the interval for saving would be in every step.
+\subsubsection*{wstep(1) = $-1$}
+wstep(1) = -1 produces the mxt\_fin-files in which the initial conditions and the end conditions are specified. To be precise, the saved conditions include: The initial and final kinetic energy of the projectile and lattice, the potential energy, the total energy, the initial and final positions and velocities of the projectile, the lowest position of the projectile, its number of bounces and the coordinates of the first five bounce sites.\\
+This is a very useful but relatively storage space friendly output if you want to analyse your trajectories.
+\subsubsection*{wstep(1) = 0}
+This option save information on the trajectory along the way into the mxt\_traj-files. It saves the time step and the energies for species along the trajectory and the density, the position and the velocities of the projectile. \\
+If you want to equilibrate your slab to a temperature and do not use langevin dynamics, use the setting wstep 0 1 to check to which temperature your slab actually equilibrates.
+\subsubsection*{wstep(1) = n}
+With this setting, the entire configuration of the trajectory is saved as a binary file after the $n$th step. This means that the \textit{step}, the potential energy and \emph{Tsurf} are saved, as well as all the input parameters for the slab as discussed in section \emph{slab}. All the positions, velocities, accelerations and densities of the slab and the projectile are saved.\\
+The resulting files can be read in as configuration files (see \textit{conf}).
+\subsubsection*{wstep(1) = $-2$}
+With this setting, the entire configuration of the trajectory is saved as an ASCII file after the $n$th step. This means that the \textit{step}, the potential energy and \emph{Tsurf} are saved, as well as all the input parameters for the slab as discussed in section \emph{slab}. All the positions, velocities, accelerations and densities of the slab and the projectile are saved.\\
+The resulting files can be read in as configuration files (see \textit{conf}).
+\subsubsection*{wstep(1) = $-3$}
+This option prints out a POSCAR-file at the end of the trajectory.
+\subsection*{wstep(1) = $-4$}
+The positions and the velocities are saved in each wstep(2) step into the mxt\_pv...dat-file.
+
+\section{Other Input Files}
+Depending on the options you chose in the md\_tian.inp-file, you will need different input files.
+\subsection{conf: The mxt\_conf-file}
+The mxt\_conf-files are one of the output files this program produces. They are binary files and can be read in for starting configuration under the \emph{conf} option of the input file.
+\subsection{conf: The POSCAR-file}
+The POSCAR file allows the user to enter any given position for both lattice atoms and projectile atoms. In combination with \emph{rep} and \emph{celldim}, these files also allow to construct a larger slab.
+The structure of a POSCAR file is as follows:\\
+\emph{Comment}\\
+1.000\\
+\emph{Cell Matrix}\\
+\emph{No. of lattice atoms, No. of projectiles}\\
+\emph{Coordinate System}\\
+\emph{Coordinates of lattice atoms}\\
+\emph{Coordinates of projectiles}
+\subsection{pip 2}
+If \emph{pip} is given with 2, then a file name has to be given as the last element of the \emph{pip} line which contains the positions of the projectiles. Its structure has to be as follows:\\
+\emph{number of projectiles}\\
+\emph{position of projectiles}\\
+Be careful to keep to the number of projectiles you specified under the flag \emph{projectile} in the input file. If your number of projectiles in the projectile-file is too small, the program will abort. If it is too large, the program will only read in the positions of the first projectiles.\\
+
+\chapter{Usage of mdtian}
+\label{Sec:usage:MDtian}
+This chapter has been copied directly from Svenja M. Janke's PhD-Thesis\,\cite{svenjaphd}.
+
+MD\_tian is a program for molecular dynamics calculations that Prof. Dr. Dan Auerbach, Dr. Alexander Kandratsenka, Svenja M. Janke and Marvin Kammler wrote in FORTRAN to deal with our molecular dynamics simulations and fitting the EMT to DFT input data. The program's name derives from the Chinese expression
+\begin{CJK*}{UTF8}{gbsn}
+天下
+\end{CJK*}
+(Ti$\bar{\mathrm{a}}$nxi$\grave{\mathrm{a}}$), meaning `under one sky', thereby underscoring our aim to produce a program which includes all subprograms needed for our EMT-related purposes. `\begin{CJK*}{UTF8}{gbsn}
+天
+\end{CJK*}' and `\begin{CJK*}{UTF8}{gbsn}
+下
+\end{CJK*}' (symbolized by the underscore) are deliberately wrong way round in the program's name, because symbols on temples in China were commonly written from right to left.
+At the moment, the MDtianxia program calculates forces for the MD-simulations using the effective medium theory, but in future, the program shall be expanded to include also Lennard-Jones Potentials or other potential forms. 
+The positions of the all species in the system are subjected to periodic boundary conditions.
+
+The program takes three types of input files: a file that determines the geometry that should be used for the calculations, a file which includes the EMT parameters for each species used during the MD calculations and a control file. The control file, invoked by different flags, determines whether an MD-simulation or a fit is run and with which properties, the number of species and what kind of input data is used.
+
+\section{The EMT-parameter file}
+Apart for the suffix `.nml' the name of a parameter file can be chosen arbitrarily. Each chemical element has its separate parameter file. So far, we have chosen the following convention for naming the files: First, the potential to which the parameters refer, followed by the number of the fit from which the parameters stem and then, separated by an underscore, the element's name. So `emt515\_Au.nml' contains the parameters for the EMT potential for gold and stems from the fit No. 515. The file begins with a short comment line (see Fig.\ref{Fig:nmlfile}). In the following lines, the name of the element is given followed by the list of the parameters. The order of lines in the file is fixed and must not be changed, otherwise the parameters will be wrongly assigned within the program.
+\begin{figure}[t!]
+\begin{verbatim}
+ Slab EMT Parameters              # Comment line
+ Name= Au                         # name of the species
+   eta2=             3.29722801   # List of parameters
+     n0=             0.04184152
+     E0=            -3.80000000
+ lambda=             4.18153000
+     V0=             0.34752943
+  kappa=             3.24943176
+     s0=             1.64174000
+\end{verbatim}
+\caption{\label{Fig:nmlfile}The parameter file for MD\_tian.}
+\end{figure}
+
+\section{The Configuration files}
+\label{Sec:mxt:input}
+There are two types of configuration files the program can read in. Which type of file should be read in is specified with the \textit{conf}-flag in the control file. The \textit{conf} flag can be employed as shown in Tab.\,\ref{Tab:mxt:conf}.
+\begin{table}[b!]
+\centering
+\caption{Selection options for configuration files, to be inputted into the control file as shown. \textit{address} signifies the absolute path to the file of the name `file'.}
+\label{Tab:mxt:conf}
+\begin{tabular}{p{1cm}p{2cm}p{2cm}p{4.5cm}p{3cm}}
+\hline\hline
+conf & fit & `address/file' & AIMD trajectory No. & fit number\\
+conf & POSCAR & `address/file' & &\\
+conf & conf & `address/file' & number of configurations&\\
+conf & geo & `address/file' & which configuration&\\
+\hline
+\hline
+\end{tabular}
+\end{table}
+\textit{address} signifies the absolute path to the file of the name `file'; `POSCAR' and `fit' both need a POSCAR-file as input (see Sec.\,\ref{Sec:VASP:POSCAR}). For the options `geo' and `conf', the program's own binary output mxt\_conf$n$.bin-files (where $n$ can be any number between 99999999 and 00000000) are read in. They contain positions, velocities, accelerations and densities for all atoms. These files make it possible to restart an interrupted calculation, e.g. if one wants to start MD-simulations from an already equilibrated slab. Species that are already treated in the mxt\_conf$n$.bin-file need not be specified in the control file; another species may however be added. That means that if one has equilibrated a metal surface to a certain temperature, one can read in the information of this equilibration by means of an mxt\_conf$n$.bin-file and add a particle to it by setting the \textit{particle}-flag in the control file to start MD-simulations. In the latter case, the \textit{pip}-flag needs to be specified in the control-file to give information on the initial positions of the particle. Likewise, the temperature only needs to be specified if one wants to continue simulations at a temperature that deviates from that of the mxt\_conf$n$.bin-file.
+
+If the option `geo' is used, a specific mxt\_conf$n$.bin-file of the number $n$ (\textit{which configuration}, Tab.\,\ref{Tab:mxt:conf}) is read in. For `conf', an mxt\_conf$n$.bin-file is chosen randomly from a batch of `number of configurations' mxt\_conf$n$.bin-files which makes it possible to start MD trajectory calculations from a number of different configurations for the equilibrated surfaces.
+
+With the option `fit', a fit can be run, which reads in the relaxed atom positions form a POSCAR-file and further needs the number of the AIMD-trajectory to which the fit is to be done, followed by the number of the fit.
+
+
+\section{The Control File for MD simulations}
+Upon execution, the \textit{mdtianxia} program demands an input file which is the control file. It is usually named `md\_tian.inp' but its precise name has no influence on the program and it contains all the flags that are necessary to execute the program.
+\begin{figure}[t!]
+\begin{minipage}{0.9\textwidth}
+\centering
+\begin{verbatim}
+start 1
+ntrajs 1
+Tsurf 230
+step 1
+nsteps 50001
+wstep 50000 1
+lattice   Au 196.96657 7 emt515_Au.nml ver -3
+pes emt
+celldim 2 2 6 none 
+rep 1 1
+conf POSCAR au111_2x2x6.POSCAR
+\end{verbatim}
+\end{minipage}
+\begin{minipage}{0.9\textwidth}
+\centering
+\begin{verbatim}
+
+
+\end{verbatim}
+   
+\end{minipage}
+\begin{minipage}{0.9\textwidth}
+\centering
+\begin{verbatim}
+start 1
+ntrajs 1
+step 1
+Tsurf 300
+nsteps 200001
+wstep 1 200
+lattice  Au 196.96657 7 emt515_Au.nml ver -3
+pes emt
+conf mxt "/home/theory/mxt/thermalisation/p515_ver_6x6x6_T300/conf" 1
+\end{verbatim}
+\end{minipage}
+\caption{\label{Fig:mxt:thermalization}The control files used in MD\_tian to create 1000 configurations of an equilibrated Au slab at 300\,K. Top: Control file to create a single file for an equilibrated configuration, bottom: control file to create 1000 further equilibrated configurations.}
+\end{figure}
+\begin{figure}[b!]
+\centering
+\begin{verbatim}
+start 1
+ntrajs 1
+step 0.1
+nsteps 10000
+wstep -1 1
+Einc 3.33
+inclination 45
+azimuth 60
+pes emt
+projectile H   1.0079  7 emt515_H.nml lan  1
+conf mxt "/home/theory/mxt/thermalisation/rec_p515_ver_6x6x4_T300/conf" 1000
+pip 0 6.0
+\end{verbatim}
+\caption{\label{Fig:mxt:MDsimulation}The control file used in MD\_tian for a typical MD-simulation.}
+\end{figure}
+Figure\,\ref{Fig:mxt:thermalization} shows the control files used to equilibrate a slab and Fig.\,\ref{Fig:mxt:MDsimulation} shows the control file that uses the configurations from the slab-equilibration as input to start an MD-simulation.
+The construction of equilibrated slab configurations that can be used as starting configurations works by first creating a single equilibrated configuration using the control file in Fig.\,\ref{Fig:mxt:thermalization}, top, and then, starting from that configuration, creating 1000 configurations in total which can be randomly sampled at the start of a trajectory (Fig.\,\ref{Fig:mxt:thermalization}, bottom).
+The flags are:\\
+\textbf{start} is the number of the calculated trajectory.\\
+\textbf{ntrajs} defines the number of trajectories that are to be calculated.\\
+\textbf{Tsurf} gives the surface temperature that the slab should have.\\
+\textbf{step} is the step in femtoseconds with which the trajectory is propagated.\\
+\textbf{nsteps} are the number of steps made during the trajectory. So, \textit{nsteps}$\cdot$\textit{step} gives the total length of the trajectory in fs.\\
+\textbf{wstep} determines the type of the output file and when it is to be written. It will be explained in more detail in the following section (Sec.\,\ref{Sec:mxt:output}).\\
+\textbf{lattice} and \textbf{projectile} specifies the species of the slab and particle, respectively. At the moment, the EMT-implementation only offers two species in interaction with one another. Both flags are followed by the element abbreviation of the species, its atomic mass in atomic mass units, the number of the parameters, the name of the parameter file and the propagation algorithm (ver = Verlet, lan = Langevin, pef = Verlet, but saving hypothetical energy loss to ehp during the calculation, bee=Beeman). For `lattice', the last integer determines how many atoms are to be kept fixed to their positions during the propagation. A negative number denotes the number of layers, while a positive number affixes that number of atoms, starting from the first atom given in the configuration file for the slab. For `projectile', the last integer determines the number of particles in one periodic image.\\
+\textbf{pes} This flag will in future offer the choice between different methods to calculate the forces and energies. At the moment, only EMT can be used.\\
+\textbf{celldim} gives the dimensions of the slab. First, the number of atoms in $x$- and $y$-direction is given and then the number of layers in $z$-direction. This option also allows to include ad-atoms or steps, for which the flag `none' in line 10 of Fig.\,\ref{Fig:mxt:thermalization}, top, would have to be replaced by `atlayer' followed by the number of atoms for each layer, starting from the surface.\\
+\textbf{rep} gives the number of times the slab is to be repeated into $x$- and $y$-direction. Although md\_tian treats each problem within periodic boundary conditions, the EMT calculations need a supercell that includes up to the next-next-nearest neighbor atoms. This makes it necessary to increase the size of the input cell from usually $2\times2$ in $xy$-direction specified in the POSCAR file to $6\times6$. To put it in other words: this option allows the user to input a POSCAR-file of minimal extension in $xy$-direction ($2\times2$), but use a much larger slab for the actual MD-simulation. A larger slab should circumvent the problem of artificial phonon-modes impressed upon the surface by small cells and periodic boundary conditions for longer time-scales.\\
+\textbf{conf} offers the choice of the input file as described in the previous section (Sec.\,\ref{Sec:mxt:input}).\\
+\textbf{Einc} defines the incidence energy of the projectile in eV.\\
+\textbf{inclination} sets the polar incidence angle $\theta_\mathrm{in}$ of the projectile. $\theta_\mathrm{in}=0^\circ$ corresponds to normal incidence, $\theta_\mathrm{in}=90^\circ$ to parallel incidence.\\
+\textbf{azimuth} sets the azimuth incidence angle $\phi_\mathrm{in}$ of the projectile. $\phi_\mathrm{in}=0^\circ$ corresponds to scattering along the $[1\bar{1}0]$-direction.\\
+\textbf{pip} describes how the particle should start the calculation. \textit{pip} = 0 determines that only one particle is to be considered and that its position is to be chosen randomly. It is followed by the starting distance to the surface. The flag also allows to read in a specific starting position from the configuration file (\textit{pip}=$-1$), the specific impact site (\textit{pip}=1), extra file to read in starting positions (\textit{pip}=2) or starting positions determined by site-name (\textit{pip}=3).
+
+\subsection{Output files}
+\label{Sec:mxt:output}
+The \textit{mdtianxia}-program offers seven different output options which can be controlled with the flag \textit{wstep} in the input file. The first slot for \textit{wstep} determines which kind of output file is printed and the last, where it makes sense, in which step.
+\\
+\textbf{wstep(1)} $\mathbf{=m}$ saves all the information that is necessary to start the trajectory again into a binary file of the form mxt\_conf$n$.bin (where $n$ can be any number between 99999999 and 00000000) after the $m^\mathrm{th}$ step and then every wstep(2)$^\mathrm{th}$ step.\\
+\textbf{wstep(1)} $\mathbf{=0}$ produces files of the form mxt\_trj$n$.dat. They contain the time step and the energies for species along the trajectory and the density, the position and the velocities of the projectile. If only `lattice' is specified, it can be used to determine the temperature to which the slab equilibrates.\\
+\textbf{wstep(1)} $\mathbf{=-1}$ produces files of the form mxt\_fin$n$.dat which contain the initial conditions and energies and those at the end of the trajectory as well as the number of bounces and first five bounce sites.\\ 
+\textbf{wstep(1)} $\mathbf{=-2}$ produces files of the form mxt\_conf$n$.xyz which can be read in with visualization programs and contain only the positions of the slab and particle atoms.\\
+\textbf{wstep(1)} $\mathbf{=-3}$ produces a POSCAR-file at the end of the trajectory with the name\linebreak mxt\_anneal$n$.POSCAR. It also contains information about the energies at the end of the trajectory.\\
+\textbf{wstep(1)} $\mathbf{=-4}$ produces files of the form mxt\_rv$n$.dat which contain the initial conditions and energies and those at the saving-time of the trajectory. Here, the positions, velocities and densities are saved in every wstep(2)$^\mathrm{th}$ step of the trajectory.\\
+\textbf{wstep(1)} $\mathbf{=-5}$ produces files of the form mxt\_conf$n$.pdb. These files have the pdb-format and can be used e.g. with the Visual Molecular Dynamics (VMD) package\,\cite{humphrey1996}.
+
+\section{The Propagation}
+\subsection{Propagation Algorithms}
+Propagation is done using either the Langevin or the Verlet algorithm. The program also offers the Refson-Beemann algorithm\,\cite{refson1985}. The velocity Verlet algorithm was implemented in the following form\,\cite{allen1989} where $\delta t$ is the time step, $\mathbf{r}$ is the position, $\mathbf{v}$ the velocity and $\mathbf{a}$ the acceleration. 
+\begin{equation}\label{Eq:Verlet_v1}
+\mathbf{v}(t+\tfrac{1}{2}\,\delta t)=\mathbf{v}(t)+\tfrac{1}{2}\,\delta t \,\mathbf{a}(t)
+\end{equation}
+\begin{equation}\label{Eq:Verlet_r1}
+\mathbf{r}(t+\delta t)=\mathbf{r}(t)+\delta t\, \mathbf{v}(t+\tfrac{1}{2}\,\delta t)
+\end{equation}
+\begin{equation}\label{Eq:Verlet_v2}
+\mathbf{v}(t+\delta t)=\mathbf{v}(t+\tfrac{1}{2}\,\delta t)+ \tfrac{1}{2}\delta\, t\,\mathbf{a}(t+\delta t)
+\end{equation}
+For the Langevin-equation the extended Verlet algorithm was implemented in the following manner according to Allen and Tildesly\,\cite{allen1989}:
+\begin{equation}\label{Eq:Langevin_r}
+\mathbf{r}(t+\delta t)=\mathbf{r}(t)+c_1\,\delta t\,\mathbf{v}(t)+c_2\,\delta t^2\,\mathbf{a}(t)+\delta\mathbf{r}^\mathrm{G}
+\end{equation}
+\begin{equation}\label{Eq:Langevin_v}
+\mathbf{v}(t+\delta t)=c_0\,\mathbf{v}(t)+c_1\,\delta t\,\mathbf{a}(t)+\delta\mathbf{v}^\mathrm{G}
+\end{equation}
+For $\eta>0.01$\,\AA$^{-3}$ and $T<0.0001$\,K, the parameters can be calculated from the exact expression. Otherwise, the Taylor series was used.
+\begin{equation}
+c_0=\mathrm{e}^{-\eta\,\delta t}\approx 1-\eta\,\delta t+\frac{1}{2} (\eta\,\delta t)^2
+\end{equation}
+\begin{equation}
+c_1=(\eta\,\delta t)^{-1}(1-c_0)\approx 1-\frac{1}{2}\eta\,\delta t+\frac{1}{6}(\eta\,\delta t)^2
+\end{equation}
+\begin{equation}
+c_2=(\eta\,\delta t)^{-1}(1-c_1)\approx \frac{1}{2}-\frac{1}{6}\eta\,\delta t+\frac{1}{24}(\eta\,\delta t)^2
+\end{equation}
+and the stochastic integrals with $m$ being the mass of the particle subjected to the Langevin equations.
+\begin{equation}
+\delta \mathbf{r}^G=\int_t^{t+\delta t} \frac{dt'}{m \eta}(1-\mathrm{e}^{-\eta(t+\delta t-t')})\mathbf{F}^\mathrm{st}(t')
+\end{equation}
+\begin{equation}
+\delta \mathbf{v}^G=\int_t^{\delta t+t} dt' \frac{\mathrm{e}^{-\eta(t+\delta t-t')}}{m}\mathbf{F}^\mathrm{st}(t')
+\end{equation}
+The stochastic force $\mathbf{F}^\mathrm{st}$ is sampled from a bivariate Gaussian distribution.
+
+\subsection{Fitting Procedure}
+The fitting procedure employed a Levenberg-Marquardt\,\cite{Levenberg1944,Marquardt1963} damped least squares procedure which minimizes the rms deviation of the energy values given by DFT and the EMT PES. Since I have used the fitting routine, the Levenberg-Marquardt damped least square procedure has been replaced with an Trusted Region Nonlinear Least Squares with Linear Bound Constrains procedure based on the Levenberg-Marquardt procedure from the Intel MKL libraries which allows fitting with constrains. Since I have used the fitting procedure, it has been improved using a genetic algorithm\,\cite{marvinmaster,marvinpc} whose description, since not relevant for the present thesis, will be omitted. A control file for the fit using this routine can be seen in Fig.\,\ref{Fig:mxt:fitting}, also to be used with MD\_tian. The flags in the control file that have not been mentioned in Section\,\ref{Sec:mxt:input} here are:\\
+\textbf{conf} the last two numbers determine which AIMD trajectory is to be used for the fit (in Fig.\,\ref{Fig:mxt:fitting} that would be trajectory No. 817) and the number of the fit (2000)\\
+\textbf{trajname} this one determines the total number of AIMD trajectories that are available and is followed by the number of all these trajectories. This allows to calculate the rms-error to a flexible number of AIMD configurations.\\
+\textbf{fitmix} determines the number of points to be taken from the 3D-grid for the fit (Fig.\,\ref{Fig:mxt:fitting}, line 8, 700) and from the selected AIMD trajectory (200).\\
+\textbf{evasp} This is the reference energy calculated with VASP. Usually, this is the energy of a particle 6\,\AA~above the surface used in the calculations.\\
+\textbf{3Dgrid} gives options for the 3D-grid. The first two numbers determine the lowest and highest energy value of configurations allowed in the fit. The second number determines the number of sites that are to be used in the fit, followed by their identification number as given in section\,\ref{Sec:DFTinputdata}.\\
+\textbf{aimd} The first two numbers determine again the lowest and highest energy value belonging to configurations that are to be used in the fit. The third number gives the minimal distance of the particle to a surface atom and the last one excludes distances from the surface above this number.\\
+\textbf{fitconst} determines which parameters are kept fixed to the values given in the parameter input files. The first number after the flag gives the number of parameters that are kept fixed (see Fig.\,\ref{Fig:mxt:fitting}, line 12). The following numbers correspond to the numbers of the parameters. Parameters $1$--$7$ are the parameters of the particle and 8--14 those of the slab according to the order of parameters in the EMT parameter file ($1,8 = \eta$, $2,9 = n_0$, $3,10 = E_0$, $4,11 = \lambda$, $5,12 = V_0$, $6,13 = \kappa$,$7,14 = s_0$).\\
+\textbf{maxit} is the maximal number of iterations.
+\begin{figure}[t!]
+\begin{verbatim}
+1 projectile H 1.0079 7 'emt_stroem_H.nml' ver 0
+2 lattice Au 196.96657 7 'emt_stroem_Au.nml' ver 0
+3 pes emt
+4 celldim 2 2 4 x
+5 rep 1 1
+6 conf fit au111_2x2x4.POSCAR 817 2000
+7 trajname 13 005 010 801 814 817 818 820 821 825 831 832 833 858
+8 fitmix 700 200
+9 evasp -24.995689d0  ! A value for Au 2x2
+10 3Dgrid -20.0 20.0 4 7 3 1 10
+11 aimd -20.0 20.0 -0.1 3.0
+12 fitconst 14 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+13 maxit 1 
+\end{verbatim}
+\caption{\label{Fig:mxt:fitting}An exemplary control file for fitting with MD\_tian.}
+\end{figure}
+
+Strictly speaking, a routine is implemented into the program that allows fitting the electron densities obtained from the VASP calculations. However, because the electron densities obtained from EMT and VASP are not the same entities, this routine has been commented out and is at present not serviceable.
+
+\subsection{Surface Annealing}
+To test and describe the stability of the reconstructed surface, I performed simulations with surface annealing with the MD\_tian program. An exemplary control file I used to steer the simulated annealing is shown in Fig.\,\ref{Fig:mxt:anneal}. The flags that were not described above are those that control the annealing procedure.
+
+\textbf{anneal} controls the annealing procedure; the first number is the maximal temperature $T_\mathrm{max}$ that should be reached during annealing (in case of Fig.\,\ref{Fig:mxt:anneal} 700\,K, see line 11) and the second number is the number of steps $t_\mathrm{step}$ for which a temperature should be simulated.
+The annealing starts at $\tfrac{2\,t_\mathrm{step}}{nstep} \cdot T_\mathrm{max}$, then, the surface is heated up in $nstep/(2\,t_\mathrm{step})$ intervals to $T_\mathrm{max}$ and then goes down again to \textit{Tsurf}. Each temperature interval is simulated for $t_\mathrm{step}$ steps. The simulated annealing is repeated in \textit{ntrajs} cycles.
+
+To simulate annealing, the Langevin Dynamics are used as a thermostat. A higher friction coefficient of $\eta \approx 3\cdot10^{-3}$\,$\mathrm{fs}^{-1}$ was assumed. This makes the annealing simulations more effective and decreases the simulation time. I chose the friction coefficient for the simulated annealing to assume roughly the magnitude of friction an H atom would experience inside the gold surface. By probing higher and lower friction coefficient, I checked that the friction coefficient used for the simulated annealing gives the same results for structure and energy values after an annealing simulation.
+
+\begin{figure}[b!]
+\begin{verbatim}
+1 start 1
+2 Tsurf 0
+3 step 1
+4 nsetps 100000
+5 wstep 0 1
+6 lattice Au 196.96657 7 emt515_Au.nml lan -3
+7 pes emt
+8 rep 0 1
+9 celldim 22 2 6 atlayer 46 44 44 44 44 44
+10 conf POSCAR 'rec_au111_22x2x6.POSCAR'
+11 anneal 700 500
+12 ntrajs 20
+\end{verbatim}
+\caption{\label{Fig:mxt:anneal}An exemplary control file for annealing simulations with MD\_tian.}
+\end{figure}
+
+
+
+\subsection{Influence of MD Simulation Conditions on Scattering Results}
+To make sure that the simulation conditions I have chosen for the MD simulations are not cause of problems that could be prevented, I performed several tests whose results are presented in Tab.\,\ref{Tab:Res:MD:Stat:scattering} and Tab.\,\ref{Tab:Res:MD:Stat:eloss}.
+
+Problems that could be encountered are (1) a too small surface cell in $x$-, $y$- direction that could lead to small oscillations imposed on the surface atoms by the periodic boundary conditions; I therefore tested if scattering results differ if I use a $10\times10$ surface cell instead of a $6\times6$ one and could observe no difference either in outcomes of the trajectory (Tab.\,\ref{Tab:Res:MD:Stat:scattering}) or in energy loss behavior (Tab.\,\ref{Tab:Res:MD:Stat:eloss}). (2) The number of layers could have an influence on the scattering results. I check for differences between using a 4- and a 6-layered slab and found it to be of little effect. (3) If the simulations were curtailed too early, some H atoms might still retain enough energy after the end of the simulation to leave the surface, thereby changing the shape of the energy loss distributions and the scattering probabilities. I therefore checked that simulations propagated over 10\,ps do not lead to markedly different results. Little differences are to be observed, but the changes are so slight that an increase in calculation time does not appear warranted unless long term diffusion is to be considered. 
+The deviations in mean and peak energy loss for specular scattering for calculations with $10^5$ trajectories are due to the low signal-to-noise ratio.
+
+\begin{table}[t!]
+\centering
+\caption{\label{Tab:Res:MD:Stat:scattering}Outcomes (in \%) resulting from H atom collision with a Au(111) surface for nonadiabatic and adiabatic (in parenthesis) simulations. The incidence conditions are $E_\mathrm{inc}=3.33$\,eV, $\theta_\mathrm{inc}=45^\circ$ along the $[10\bar{1}]$ surface direction.}
+\begin{tabular}{lllll}
+\hline\hline
+&Scattering&Surface&Subsurface&Transmission\\
+Conditions &  & Adsorption&Absorption &  \\ \hline
+$6\times6\times6$, $10^6$ traj, 1\,ps &55 (82)&23 (4)&21 (6)&1 (8)\\
+$6\times6\times6$, $10^6$ traj, 10\,ps&55 (82)&25 (6)	&19 (5)	&1 (8)\\
+$6\times 6\times4$, $10^6$ traj, 1\,ps&55 (80)&23 (3)&18 (4)&4 (14)\\
+$10\times 10\times4$, $10^5$ traj, 1\,ps&[55] (80)&[23] (3)&[18] (4)&[4] (14)\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[t!]
+\centering
+\caption{\label{Tab:Res:MD:Stat:eloss}Energy loss in \% of incidence energy for various outcomes resulting from H atom collision with a Au(111) surface for nonadiabatic and adiabatic simulations. The mean and maximum energy loss are shown for the total and differential ELD. The accuracy for specular scattering ($\theta_\mathrm{out} = 45^\circ$ $\phi_\mathrm{out} = 60^\circ$ ([$10\bar{1}]$)) has been reduced to account for the lower signal-to-noise ratio in the differential ELD. The incidence conditions are $E_\mathrm{inc}=3.33$\,eV, $\theta_\mathrm{inc}=45^\circ$ along the $[10\bar{1}]$ surface direction.}
+\begin{tabular}{lllll}
+\hline\hline
+&\multicolumn{2}{l}{Total}&\multicolumn{2}{l}{$\theta_\mathrm{out} = 45^\circ$ $\phi_\mathrm{out} = 60^\circ$}\\
+Conditions & Mean & Peak& Mean & Peak \\ \hline
+$6\times6\times6$, $10^6$ traj, 1\,ps &35.3 (4.95)&14.0 (1.65)&33.5 (2.25)&14.9 (1.35)\\
+
+$6\times6\times6$, $10^6$ traj, 10\,ps	&35.3 (4.95)&14.0 (1.65)&33.2 (2.25)&14.9 (1.35)\\
+
+$6\times6\times64$, $10^6$ traj, 1\,ps&35.3 (4.65)&14.9 (1.65)&31.7 (2.25)&15.2 (1.05)\\
+
+$10\times 10\times4$, $10^5$ traj, 1\,ps&35.3 (4.65)& 14.9 (1.95)&31.7 (2.85)&52.7 (1.35)\\
+\hline
+\hline
+\end{tabular}
+\end{table}
+
+The simulation conditions I chose are therefore very well suited to perform MD simulations.
+
+\subsection{Disintegration Temperature}
+I estimated the temperature at which the slab becomes unstable by equilibrating the slab at successively higher temperatures in steps of 50\,K for 20\,ps using a $6\times6\times6$ cell, and took the highest temperature at which the slab did not disintegrate as $T_\mathrm{stable}$. Whether or not the slab had disintegrated, I first at all check visually by looking at the structure of the slab throughout the trajectory and especially in the last step: if one of the atoms left its surface site, either by going into the gasphase or moving on top of the other surface atoms and thereby leaving a vacancy, I considered the slab as above its temperature of stability. I have not been able to link the melting temperature to other surface properties nor did I find a relation to the parameters of the fit. Since discerning the disintegration temperature visually is not very precise, I tested the disintegration temperature in large steps of 50\,K and, if in doubt, always chose the lower temperature. This means that the disintegration temperatures $T_\mathrm{stable}$ given in this thesis are a lower limit: the surface will definitely be stable up to this temperature, but it may also still be stable for $\approx 50$\,K above it. 
+
+
+
+\chapter{How to do a fit}
+
+\chapter{Function of the single modules and subroutines}
+
+\chapter{First steps: Constructing a Stack of configuration files for MD calculations}
+
+
+\bibliography{theory_group} %"bib" ist der name der datei, die man angelegt hat!! 
+\end{document}
+

@@ -1,0 +1,136 @@
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{}
+\providecommand{\foreignlanguage}[2]{#2}
+\providecommand{\Capitalize}[1]{\uppercase{#1}}
+\providecommand{\capitalize}[1]{\expandafter\Capitalize#1}
+\providecommand{\bibliographycite}[1]{\cite{#1}}
+\providecommand{\bbland}{and}
+\providecommand{\bblchap}{chap.}
+\providecommand{\bblchapter}{chapter}
+\providecommand{\bbletal}{et~al.}
+\providecommand{\bbleditors}{editors}
+\providecommand{\bbleds}{eds.}
+\providecommand{\bbleditor}{editor}
+\providecommand{\bbled}{ed.}
+\providecommand{\bbledition}{edition}
+\providecommand{\bbledn}{ed.}
+\providecommand{\bbleidp}{page}
+\providecommand{\bbleidpp}{pages}
+\providecommand{\bblerratum}{erratum}
+\providecommand{\bblin}{in}
+\providecommand{\bblmthesis}{Master's thesis}
+\providecommand{\bblno}{no.}
+\providecommand{\bblnumber}{number}
+\providecommand{\bblof}{of}
+\providecommand{\bblpage}{page}
+\providecommand{\bblpages}{pages}
+\providecommand{\bblp}{p}
+\providecommand{\bblphdthesis}{Ph.D. thesis}
+\providecommand{\bblpp}{pp}
+\providecommand{\bbltechrep}{Tech. Rep.}
+\providecommand{\bbltechreport}{Technical Report}
+\providecommand{\bblvolume}{volume}
+\providecommand{\bblvol}{Vol.}
+\providecommand{\bbljan}{January}
+\providecommand{\bblfeb}{February}
+\providecommand{\bblmar}{March}
+\providecommand{\bblapr}{April}
+\providecommand{\bblmay}{May}
+\providecommand{\bbljun}{June}
+\providecommand{\bbljul}{July}
+\providecommand{\bblaug}{August}
+\providecommand{\bblsep}{September}
+\providecommand{\bbloct}{October}
+\providecommand{\bblnov}{November}
+\providecommand{\bbldec}{December}
+\providecommand{\bblfirst}{First}
+\providecommand{\bblfirsto}{1st}
+\providecommand{\bblsecond}{Second}
+\providecommand{\bblsecondo}{2nd}
+\providecommand{\bblthird}{Third}
+\providecommand{\bblthirdo}{3rd}
+\providecommand{\bblfourth}{Fourth}
+\providecommand{\bblfourtho}{4th}
+\providecommand{\bblfifth}{Fifth}
+\providecommand{\bblfiftho}{5th}
+\providecommand{\bblst}{st}
+\providecommand{\bblnd}{nd}
+\providecommand{\bblrd}{rd}
+\providecommand{\bblth}{th}
+\begin{thebibliography}{10}
+
+\bibitem{svenjaphd}
+S.~M. Janke, \bblphdthesis{}, Georg-August University G\"ottingen, Germany,
+  \textbf{2016}.
+
+\bibitem{vasp1}
+G.~Kresse, J.~Furthm\"uller, \emph{Physical Review B} \textbf{1996}, \emph{54},
+  11169--11186.
+
+\bibitem{vasp2}
+G.~Kresse, J.~Furthm\"uller, \emph{Computational Materials Science}
+  \textbf{1996}, \emph{6}, 15--50.
+
+\bibitem{vasp3}
+G.~Kresse, J.~Hafner, \emph{Physical Review B} \textbf{1993}, \emph{47}, 558.
+
+\bibitem{vasp4}
+G.~Kresse, J.~Hafner, \emph{Physical Review B} \textbf{1994}, \emph{49}, 14251.
+
+\bibitem{vasp_manual}
+G.~Kresse, M.~Marsman, J.~Furthm\"uller, \emph{VASP the GUIDE}, University of
+  Vienna, \textbf{2012}.
+
+\bibitem{vasp_online}
+G.~Kresse, M.~Marsman, J.~Furthm\"uller, \emph{VASP the GUIDE},
+  http://cms.mpi.univie.ac.at/vasp/vasp/vasp.html, \textbf{2015}.
+
+\bibitem{Levenberg1944}
+K.~Levenberg, \emph{Quart. Appl. Math.} \textbf{1944}, \emph{2}, 164--168.
+
+\bibitem{Marquardt1963}
+D.~W. Marquardt, \emph{Journal of the Society for Industrial and Applied
+  Mathematics} \textbf{1963}, \emph{11}, 431--441.
+
+\bibitem{marvinmaster}
+M.~Kammler, \bblmthesis{}, Georg-August University G\"ottingen, Germany,
+  \textbf{2015}.
+
+\bibitem{marvinpc}
+M.~Kammler, \textbf{2016}, Private Communications.
+
+\bibitem{humphrey1996}
+W.~Humphrey, A.~Dalke, K.~Schulten, \emph{Journal of Molecular Graphics}
+  \textbf{1996}, \emph{14}, 33--38.
+
+\bibitem{refson1985}
+K.~Refson, \emph{Physica B+C} \textbf{1985}, \emph{131}, 256 -- 266.
+
+\bibitem{allen1989}
+M.~P. Allen, D.~J. Tildesley, \emph{Computer Simulation of Liquids},  \bblof{}
+  \emph{Oxford science publications}, Oxford University Press, \textbf{1989}.
+
+\bibitem{jacobsen1996}
+K.~W. Jacobsen, P.~Stoltze, J.~K. N\o{}rskov, \emph{Surface Science}
+  \textbf{1996}, \emph{366}, 394--402.
+
+\bibitem{jacobsen1987}
+K.~W. Jacobsen, J.~K. N\o{}rskov, M.~J. Puska, \emph{Physical Review B}
+  \textbf{1987}, \emph{35}, 7423--7442.
+
+\bibitem{strom1998}
+J.~Str\"omquist, L.~Bengtsson, M.~Persson, B.~Hammer, \emph{Surface Science}
+  \textbf{1998}, \emph{397}, 382--394.
+
+\bibitem{wigner1935}
+E.~Wigner, H.~B. Huntington, \emph{J. Chem. Phys} \textbf{1935}, \emph{3}, 764.
+
+\bibitem{hildenbrand1962}
+D.~L. Hildenbrand, W.~F. Hall, \emph{Journal of Physical Chemistry}
+  \textbf{1962}, \emph{66}, 754--755.
+
+\bibitem{kant1979}
+A.~Kant, K.~A. Moon, \emph{High Temperature Science} \textbf{1979}, \emph{11},
+  55--62.
+
+\end{thebibliography}
