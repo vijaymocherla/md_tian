@@ -1150,22 +1150,6 @@ subroutine traj_init(slab, teil, Eref)
 
     close(38)
 
-!    if (Tsurf_key) then
-!        ! Sample velocities of lattice atoms from thermal distribution
-!        ! assuming the minimum energy configuration
-!        v_pdof = sqrt(2.0d0*kB*Tsurf/mass_l)
-!
-!        do i=1,nof
-!            slab%v(1,i) = normal(0.0d0,v_pdof)
-!            slab%v(2,i) = normal(0.0d0,v_pdof)
-!            slab%v(3,i) = normal(0.0d0,v_pdof)
-!        enddo
-!        ! Set c.-of-m. velocity to zero
-!        slab%v(1,1:nof) = slab%v(1,1:nof) - sum(slab%v(1,1:nof))/nof
-!        slab%v(2,1:nof) = slab%v(2,1:nof) - sum(slab%v(2,1:nof))/nof
-!        slab%v(3,1:nof) = slab%v(3,1:nof) - sum(slab%v(3,1:nof))/nof
-!    end if
-
 end subroutine traj_init
 
 subroutine particle_init(s)

@@ -51,7 +51,7 @@ proj_downgone = slab%r(3,slab%n_atoms) - 3.0d0
 allocate(rmin_p(3,teil%n_atoms),rbounce(5,3,teil%n_atoms))
 allocate(col_start(teil%n_atoms),col_end(teil%n_atoms))
 nwrites=nsteps/wstep(2)
-ndata= 4 + 7*teil%n_atoms ! Epot, Ekinl, Ekinp, density, r, v
+ndata= 4 + 8*teil%n_atoms ! Epot, Ekinl, Ekinp, density, r, v, friction
 allocate(output_info(ndata,nwrites))
 allocate(tock(3,teil%n_atoms))
 allocate(imp(teil%n_atoms), q_imp(teil%n_atoms))
@@ -208,7 +208,7 @@ do itraj = start_tr, ntrajs+start_tr-1
 		case (1)
 !                   call  lj(slab,teil)
 	    end select
-	    eed = teil%dens                                 ! keep eed values
+	    eed = teil%dens                                 ! keep electron density values
 	    call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
 
             ! collect only contribution due to adiabatic effects
@@ -312,6 +312,7 @@ do itraj = start_tr, ntrajs+start_tr-1
                     output_info(5    :4+  j,nwrites) = eed
                     output_info(5+  j:4+4*j,nwrites) = reshape(teil%r,(/3*j/))
                     output_info(5+4*j:4+7*j,nwrites) = reshape(teil%v,(/3*j/))
+                    output_info(5+7*j:4+8*j,nwrites) = teil%dens(j)
                     ndata = ndata + 1
 
                 case(-2)

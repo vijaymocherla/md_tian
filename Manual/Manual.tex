@@ -47,7 +47,7 @@
 
 \title{\huge{MD Tian Xia}}
 \author{\textbf{Manual}\\ \\Prof. Dr. Daniel J. Auerbach, Svenja M. Janke,\\Marvin Kammler and Dr. Alexander Kandratsenka}
-\publishers{Institute of Physical Chemistry\\ Georg-August Universität Göttingen\\ Max Planck Institute for Biophysical Chemistry, Göttingen.}
+\publishers{Institute for Physical Chemistry\\ Georg-August Universität Göttingen\\ Max Planck Institute for Biophysical Chemistry, Göttingen.}
 \date{}
 
 
@@ -68,6 +68,19 @@
 %etc
 
 \mainmatter
+
+\chapter{To do List}
+The following to-do-list contains all the things that still need to be added to the manual or need to be taken care of inside the program. This might not need to be the right place to put such a to-do-list, but at least, it will give the gentle reader an impression of which features are not documented or may be unsafe to use.\\
+\begin{itemize}
+\item \textbf{Manual} Write into manual at thermalization that a new step is needed where the file is first equilibrated at 0 K to make sure that $z=0$\,\AA~is indeed the layer of the surface atoms.
+\item\textbf{Manual} Finish describing modules and subroutines in chapter\,\ref{Sec:Modules}.
+\item\textbf{Manual} Revise chapter Performing the Fit (chapter\,\ref{Sec:mxt:Fit:performing}) and After the Fit (chapter\,\ref{Sec:mxt:Fit:after}).
+\item\textbf{Manual} Describe in detail how fitting, md-simulations etc work and what files are needed for them.
+\item\textbf{Program} Finish inclusion of more than one particle (so far, only one atom can safely be treated in MD-simulations in the particle-structure, with more, some things go wrong) 
+\item\textbf{Program} Find out why reading in and mxt\_conf$n$.bin-file of a bulk slab-particle system after thermalization leads to a jump to exceedingly high energies
+\item\textbf{Program} Build in a way so the cell can relax in x,y,z-direction. Needed for bulk-diffusion simulations.
+\item\textbf{Program} Perhaps get rid of the mxt\_conf$n$.bin files all together and replace them with human-readable files.
+\end{itemize}
 
 \chapter{Usage of mdtian}
 \label{Sec:usage:MDtian}
@@ -242,7 +255,7 @@ Sets the polar incidence angle $\theta_\mathrm{in}$ of the projectile. $\theta_\
 \noindent\textbf{lattice}\index{lattice} and \textbf{projectile}\index{projectile}\\ 
 (Character, Real, Integer, Character, Character, Integer)\\ 
 Default: lattice Elyrium 1.0 0 `empty' none -1
-Specifies the species of the slab and particle, respectively. At the moment, the EMT-implementation only offers two species in interaction with one another. Both flags are followed by the element abbreviation of the species, its atomic mass in atomic mass units, the number of the parameters, the name of the parameter file and the propagation algorithm (ver = Verlet, lan = Langevin, pef = Verlet, but saving hypothetical energy loss to ehp during the calculation, bee = Beeman). For `lattice', the last integer determines how many atoms are to be kept fixed to their positions during the propagation. A negative number denotes the number of layers, while a positive number affixes that number of atoms, starting from the first atom given in the configuration file for the slab. For `projectile', the last integer determines the number of particles in one periodic image.\\
+Specifies the species of the slab and particle, respectively. At the moment, the EMT-implementation only offers two species in interaction with one another. Both flags are followed by the element abbreviation of the species, its atomic mass in atomic mass units, the number of the parameters, the name of the parameter file and the propagation algorithm (ver = Verlet, lan = Langevin, pef = Verlet, but saving hypothetical energy loss to ehp during the calculation, bee = Beeman). For `lattice', the last integer determines how many atoms are to be kept fixed to their positions during the propagation. A negative number denotes the number of layers, while a positive number affixes that number of atoms, starting from the first atom given in the configuration file for the slab. For `projectile', the last integer determines the number of particles in one periodic image. \textit{At the moment, the program is not capable of treating more than one particle.}\\
 
 \noindent\textbf{nsteps}\index{nsteps}\\(Integer)\\
 Default: nsteps 100\\
@@ -256,15 +269,15 @@ Defines the number of trajectories that are to be calculated.\\
 \noindent\textbf{pes}\index{pes}\\
 (Character)\\
 Default: pes emt\\
-This flag will in future offer the choice between different methods to calculate the forces and energies. At the moment, only EMT can be used.\\
+This flag will in future offer the choice between different methods to calculate the forces and energy values. At the moment, only EMT can be used.\\
 
 \noindent\textbf{pip}\index{pip}\\
-(Integer, (Real), Character)
-Default: pip -1 (6.0 top)
+(Integer, (Real), Character)\\
+Default: pip -1 (6.0 top)\\
 Describes how the particle should start the calculation (see also Tab.\,\ref{Tab:mxt:pip}). \textit{pip} = 0 determines that only one particle is to be considered and that its position is to be chosen randomly. It is followed by the starting distance to the surface. The flag also allows to read in a specific starting position from the configuration file (\textit{pip}=$-1$), the specific impact site (\textit{pip}=1 that can be chosen with a keyword, see Tab.\,\ref{Tab:mxt:pip_keyword}), extra file to read in starting positions (\textit{pip}=2) or starting positions determined by site-name (\textit{pip}=3). For \textit{pip}=2) the structure of the file to read in the particle coordinates is as follows:\\
 \emph{number of projectiles}\\
 \emph{position of projectiles}\\
-Be careful to keep to the number of projectiles you specified under the flag \emph{projectile} in the input file. If your number of projectiles in the projectile-file is too small, the program will abort. If it is too large, the program will only read in the positions of the first projectiles.\\
+\textit{At the moment, the program does not work with more than one projectile.} Be careful to keep to the number of projectiles you specified under the flag \emph{projectile} in the input file. If your number of projectiles in the projectile-file is too small, the program will abort. If it is too large, the program will only read in the positions of the first projectiles.\\
 
 \begin{table}[t!]
 \centering
@@ -386,7 +399,7 @@ Strictly speaking, a routine is implemented into the program that allows fitting
 A number of input-files\todo{input fit} go along with the fit:
 
 \subsection{Surface Annealing}
-To test and describe the stability of the reconstructed surface, I performed simulations with surface annealing with the MD\_tian program. An exemplary control file I used to steer the simulated annealing is shown in Fig.\,\ref{Fig:mxt:anneal}. The flags that were not described above are those that control the annealing procedure.
+The MD\_tian allows to perform annealing simulations. An exemplary control file that was used to steer simulated annealing for a reconstructed Au surface is shown in Fig.\,\ref{Fig:mxt:anneal}. The flags that were not described above are those that control the annealing procedure.
 
 \textbf{anneal}\index{anneal}\\
 (Real, Real)\\
@@ -420,13 +433,14 @@ To simulate annealing, the Langevin Dynamics are used as a thermostat. A higher 
 \subsubsection{MD-simulations}
 The \textit{mdtianxia}-program offers seven different output options which can be controlled with the flag \textit{wstep} in the input file. The first slot for \textit{wstep} determines which kind of output file is printed and the last, where it makes sense, in which step.
 \\
-\textbf{wstep(1)}\index{wstep} $\mathbf{=m}$ saves all the information that is necessary to continue the simulation into a binary file of the form mxt\_conf$n$.bin (where $n$ can be any number between 99999999 and 00000000) after the $m^\mathrm{th}$ step and then every wstep(2)$^\mathrm{th}$ step. This includes saving the step, the surface temperature, all input parameters for the species in the system such as number of atoms, fixed atoms, current velocities, positions, accelerations and densities. Furthermore, the step and the potential energy is saved.\\
-\textbf{wstep(1)} $\mathbf{=0}$ produces files of the form mxt\_trj$n$.dat. They contain the time step the energies for species along the trajectory and the density, the position and the velocities of the projectile. If only `lattice' is specified, it can be used to determine the temperature to which the slab equilibrates.\\
-\textbf{wstep(1)} $\mathbf{=-1}$ produces files of the form mxt\_fin$n$.dat which contain the initial conditions and energies and those at the end of the trajectory as well as the number of bounces, the first five bounce sites and the lowest position of the projectile. This option should be used if MD-simulations are performed where only the result of a trajectory is interesting.\\ 
-\textbf{wstep(1)} $\mathbf{=-2}$ produces files of the form mxt\_conf$n$.xyz which can be read in with visualization programs and contain only the positions of the slab and particle atoms.\\
-\textbf{wstep(1)} $\mathbf{=-3}$ produces a POSCAR-file at the end of the trajectory with the name\linebreak mxt\_anneal$n$.POSCAR. It also contains information about the energies at the end of the trajectory.\\
-\textbf{wstep(1)} $\mathbf{=-4}$ produces files of the form mxt\_rv$n$.dat which contain the initial conditions and energies and those at the saving-time of the trajectory. Here, the positions, velocities and densities are saved in every wstep(2)$^\mathrm{th}$ step of the trajectory.\\
-\textbf{wstep(1)} $\mathbf{=-5}$ produces files of the form mxt\_conf$n$.pdb. These files have the pdb-format and can be used e.g. with the Visual Molecular Dynamics (VMD) package\,\cite{humphrey1996}.
+\textbf{wstep(1)}\index{wstep}\index{mxt\_conf.bin} $\mathbf{=m}$ saves all the information that is necessary to continue the simulation into a binary file of the form mxt\_conf$n$.bin (where $n$ can be any number between 99999999 and 00000000) after the $m^\mathrm{th}$ step and then every wstep(2)$^\mathrm{th}$ step. This includes saving the step, the surface temperature, all input parameters for the species in the system such as number of atoms, fixed atoms, current velocities, positions, accelerations and densities. Furthermore, the step and the potential energy is saved.\\
+\textbf{wstep(1)}\index{mxt\_trj} $\mathbf{=0}$ produces files of the form mxt\_trj$n$.dat. They contain the following information for each step of the trajectory in that order:
+time, potential energy of the system, kinetic energy of the lattice, kinetic energy of the projectile, total energy, background electron density as seen by the projectile, position of the projectile, velocity of the projectile, friction coefficient of the projectile. If only `lattice' is specified, it can be used to determine the temperature to which the slab equilibrates.\\
+\textbf{wstep(1)}\index{mxt\_fin} $\mathbf{=-1}$ produces files of the form mxt\_fin$n$.dat which contain the initial conditions and energies and those at the end of the trajectory as well as the number of bounces, the first five bounce sites and the lowest position of the projectile. This option should be used if MD-simulations are performed where only the result of a trajectory is interesting.\\ 
+\textbf{wstep(1)}\index{mxt\_conf.xyz} $\mathbf{=-2}$ produces files of the form mxt\_conf$n$.xyz which can be read in with visualization programs and contain only the positions of the slab and particle atoms.\\
+\textbf{wstep(1)}\index{POSCAR} $\mathbf{=-3}$ produces a POSCAR-file at the end of the trajectory with the name\linebreak mxt\_anneal$n$.POSCAR. It also contains information about the energy values at the end of the trajectory.\\
+\textbf{wstep(1)}\index{mxt\_rv} $\mathbf{=-4}$ produces files of the form mxt\_rv$n$.dat which contain the initial conditions and energy values and those at the saving-time of the trajectory. Here, the positions, velocities and densities are saved in every wstep(2)$^\mathrm{th}$ step of the trajectory.\\
+\textbf{wstep(1)}\index{mxt\_conf.pdb} $\mathbf{=-5}$ produces files of the form mxt\_conf$n$.pdb. These files have the pdb-format and can be used e.g. with the Visual Molecular Dynamics (VMD) package\,\cite{humphrey1996}.
 
 \subsubsection{Output files of the fitting routine}
 The fitting routine automatically creates four types of output-files for the fit $n$: the parameter file(s) that contain the new parameters resulting from the fit, the dev2eqdft$n$.dat file and the densEqdft$n$.dat file, the traj$n$.dat. It furthermore writes information on the fit into the c44rms.dat-file.
@@ -1072,6 +1086,7 @@ If you are fitting $s_{0,H}$ or $E_{0,H}$, I would first fit them with some of t
 \label{Mdtianfit}
 \end{figure}
 \subsection{Performing the fit}
+\label{Sec:mxt:Fit:performing}
 \begin{figure}[t!]
 \begin{verbatim}
 projectile H 1.0079 7 'fitdata/emt573_H.nml' ver 0
@@ -1116,6 +1131,7 @@ No.&Parameter&No.&Parameter\\
 Use a ratio of 5:2 between your Equilibrium- and AIMD-DFT Points. This appears to give good results. But we should do more detailed testing here.\\
 Some AIMD-trajectories will work better for the fit than others. In my experience, trajectories in which the hydrogen atom spends a long time in the subsurface are not quite as suited as single- or double bounce trajectories. In our fitting procedure, you can decide between either taking regularly spaced points from the AIMD-trajectory (de\_aimd\_max = 0.0) or only such points that differ by a certain energy from the previous point (de\_aimd\_max = x). In my experience, taking equally spaced points works better. Also, you can decide points up to a certain energy should be taken into account (e\_max). In the program, this value is set to 20\,eV which I found to be suited best.
 \subsection{After the Fit}
+\label{Sec:mxt:Fit:after}
 After the fit, the physically reasonable behaviour of the fit and its convergence needs to be determined. To check the convergence, calculate the rms to the input-data and the rms to the remaining AIMD-trajectories. If those values are both below 190\,meV, the fit can be considered a candidate.
 
 \subsubsection*{Checking the Physical Behaviour of the Fit}
@@ -1147,11 +1163,18 @@ Ni&&2.58\,\cite{kant1979}&&\\
 If the fit has problems converging, you can first try fitting to the equilibrium-GGA-DFT-points and use the resulting parameters as input in a new fit where you then include both the equilibrium-DFT-points and the aimd-DFT-points.
 Last but not least: form a circle of salt around your computer before starting the fitting and sacrifice a few drops of water to Thoth.\\
 
+\chapter{MD simulations}
+\todo{describe how to to MD simulations}
+\section{Slab preparation}
+\index{thermalization}
+For MD-simulations of particles scattering from surfaces, the surface needs to be prepared previous to the simulations
+
+\chapter{Simulated Annealing}
 
 \chapter{Skycruiser}
-Skycruiser is Genetic Algorithm wrapper script to the md\_tian program. It fully automatizes the fitting of a Potential Energy Surface. Without this script, the only part in the entire procedure that lacked a systematic approach is the actual tuning of the EMT parameter set itself. The problem is the following: on the one hand, md\_tian uses a gradient descend method to minimize the root mean square error between EMT and DFT reference energies. On the other hand, there are seven parameters per atomic species in EMT which enable the PES to be applicable to a large variety of systems, but even the most sophisticated nonlinear least squares fitting routine does not perform well in such a high dimensional environment. In the best case, it simply does not find the global minimum, but most of the time, the routine yields a PES which is far from being physically reasonable. It might, for example, not fulfill the elastic stability criteria or let the metal disintegrate at a ridiculous temperature, among other exasperating problems.
+Skycruiser is Genetic Algorithm wrapper script to the md\_tian program. It fully automatizes the fitting of a Potential Energy Surface. Without this script, the only part in the entire procedure that lacked a systematic approach is the actual tuning of the EMT parameter set itself. The problem is the following: on the one hand, md\_tian uses a gradient descend method to minimize the root mean square error between EMT and DFT reference energy values. On the other hand, there are seven parameters per atomic species in EMT which enable the PES to be applicable to a large variety of systems, but even the most sophisticated nonlinear least squares fitting routine does not perform well in such a high dimensional environment. In the best case, it simply does not find the global minimum, but most of the time, the routine yields a PES which is far from being physically reasonable. It might, for example, not fulfill the elastic stability criteria or let the metal disintegrate at a ridiculous temperature, among other exasperating problems.
 
-Skycruiser a systematic approach to this multidimensional optimization problem. It extends the goal from reproducing DFT energies by requiring compliance to metal properties like the bulk and shear moduli and the cohesive energy alongside metal-hydrogen interaction characteristics like the vacuum bond dissociation energy. A Genetic Algorithm seems well-suited for this task since one of its inherent features is a fitness function that combines all of these measures of quality into a single number. Skycruiser can run md\_tian in parallel with different initial EMT parameters. In this approach, a large share of parameter space can be explored in a productive fashion. The algorithm shoots off several hundred fits in each generation and those, which give physically meaningful PESs and also reproduce the interaction energies, are possible candidates for the successful simulation of atomic beam scattering experiments. In the algorithm, PESs are assigned a fitness value after each local optimization and mix their EMT parameters to form the subsequent generation. By doing so, new initial parameter sets are generated with each individual and optimized sets are passed on, which reproducibly leads to fitness convergence after roughly one hundred generations.
+Skycruiser a systematic approach to this multidimensional optimization problem. It extends the goal from reproducing DFT energy values by requiring compliance to metal properties like the bulk and shear moduli and the cohesive energy alongside metal-hydrogen interaction characteristics like the vacuum bond dissociation energy. A Genetic Algorithm seems well-suited for this task since one of its inherent features is a fitness function that combines all of these measures of quality into a single number. Skycruiser can run md\_tian in parallel with different initial EMT parameters. In this approach, a large share of parameter space can be explored in a productive fashion. The algorithm shoots off several hundred fits in each generation and those, which give physically meaningful PESs and also reproduce the interaction energy values, are possible candidates for the successful simulation of atomic beam scattering experiments. In the algorithm, PESs are assigned a fitness value after each local optimization and mix their EMT parameters to form the subsequent generation. By doing so, new initial parameter sets are generated with each individual and optimized sets are passed on, which reproducibly leads to fitness convergence after roughly one hundred generations.
 
 In this optimization problem, the global minimum is not (necessarily) found because of two reasons. First, search space is simply to large to be explored exhaustively. This is why a heuristic method like a Genetic Algorithm is appropriate. Second, and much more general, the objective function to minimize is not really objective. It is an empirical expression that condenses all quality criteria into a single number. Different contributions might be weighted differently and since so many of them need to be taken into account, there are a lot of possible paths to take.
 
@@ -1231,9 +1254,9 @@ with $\mu$ as the value given in the parameter file, and $\sigma$ as the number 
 \textbf{lit\_zeta} has the same input structure as "lit\_bulk\_mod" but constrains $\zeta$ defined in Eq.\,\ref{zeta}.\\
 \textbf{lit\_bondlength} has the same input structure as "lit\_bulk\_mod" but constrains the \textit{in vacuo} M-H bond length.\\
 \textbf{energy\_min} can contain the minimum interaction energy that shall be considered during the fit, defaults to -20.\\
-\textbf{energy\_max} can contain the minimum interaction energy that shall be considered during the fit, defaults to 20. This is to exclude absurd energies from the fit which result from the H-atom being very close to a surface atom in the DFT grid.\\
+\textbf{energy\_max} can contain the minimum interaction energy that shall be considered during the fit, defaults to 20. This is to exclude absurd energy values from the fit which result from the H-atom being very close to a surface atom in the DFT grid.\\
 \textbf{always\_include\_sites} can contain the symmetry sites of the DFT grid that will always be included in the fit in the format "\%d". The sites not included here will be treated as part of the genome and will be subject to crossover and mutation.\\
-\textbf{min\_dist\_to\_metal} can contain a lower limit for the H-metal atom distance and defaults to 0.1. If the H-atom comes closer to a surface atom than given by this tag, it will not be used for the fit. This excludes very large interaction energies from the fit which might occur in the DFT grid.\\
+\textbf{min\_dist\_to\_metal} can contain a lower limit for the H-metal atom distance and defaults to 0.1. If the H-atom comes closer to a surface atom than given by this tag, it will not be used for the fit. This excludes very large interaction energy values from the fit which might occur in the DFT grid.\\
 \textbf{max\_dist\_from\_surface} can contain a number that describes the maximum distance between the H-atom and the surface and defaults to 6. If the H-atom is further away, any configuration/energy pairs will not be considered in the fit.\\
 \textbf{aimd\_weight} is a number between zero and one, defaults to 0.5, and determines the contribution of the validation data set to the fitness of the individuals. The basis for the fitness $F$ is the sum of the inverses of the RMSEs to the training and validation data set
 \begin{align*}
@@ -1271,14 +1294,15 @@ To monitor how the fit performs during run-time and also to extract good fits at
 
 
 \chapter{Function of the single modules and subroutines}
+\label{Sec:Modules}
 \section{atom\_class}
 \index{atom\_class}
 This model contains all parameters that cannot be changed during the execution of the program as well as some default values. This includes commonly used irrational numbers and physical constants and unit-conversion factors. Furthermore, the object atoms and its allocation defined which holds information such as the positions, velocities, forces \&c about the particle or the lattice.
 
-Also, the program's basic units \index{units} \index{program basic units} are defined. They are:\\
+\noindent Also, the program's basic units \index{units}\index{program basic units} are defined. They are:\\
 Length: \AA\\
 Time: fs\\
-Energy: \\
+Energy: eV\\
 The program-derived units\index{program derived units} are:\\
 Mass: eV$\cdot$fs$^2$/\AA$^2$ = $1/103.6382$\,amu\\
 Angle: radian = 180$^\circ$\\
@@ -1292,10 +1316,10 @@ This is the interface for the fitting routine. It contains the following subrout
 \textbf{fit}\\
 Here, the fit is prepared. The parameter files and the input into the fit are formed and information on the beginning and end of the fit are printed out. The non-linear least square algorithm with boundary constraints is prepared and called.
  
-\textbf{dev2eqdft}\\
-Generates the dev2Eqdt$n$.dat output file of the fit. This file relates to the 3D-grid and for a fixed surface samples the ten surface sites starting from 6\,\AA~above the surface with whatever step and to whatever depth is defined in the Eq\_points\_dft.dat-file. Each position is followed by the potential energy calculated with the fit's parameter set at surface atoms frozen to their relaxed position for that position of the particle.
+\noindent\textbf{dev2eqdft}\\
+Generates the dev2Eqdt$n$.dat output file of the fit. This file relates to the 3D-grid and for a fixed surface samples the ten surface sites starting from 6\,\AA~above the surface with whatever step and to whatever depth is defined in the Eq\_points\_dft.dat-file. Each position is followed by the potential energy calculated with the fit's parameter set at surface atoms frozen to their relaxed position for that position of the particle.\\
 \textbf{denseqdf}\\
-This routine is almost identical to the above, only instead of the potential energy, the denseqdft$n$.dat-file contains the background electron density at these positions.
+This routine is almost identical to the above, only instead of the potential energy, the denseqdft$n$.dat-file contains the background electron density at these positions.\\
 \textbf{dev2aimddft}\\
 \label{Sec:Function:f4t:dev2aimd}
 This routine produces the traj$n$\_1.dat file. This file is related to the AIMD-trajectories that are used in the input-data set and control data set for the fit. It contains the step of each trajectory followed by the potential energy from the DFT-simulations and then by the potential energy calculated with the fit parameters from the positions corresponding to the step.
@@ -1303,21 +1327,21 @@ This routine produces the traj$n$\_1.dat file. This file is related to the AIMD-
 Furthermore, information on the fit (number, shear modulus, the H-metal bond formation energy, rms-error to the testing set (it consisting of all the AIMD-trajectories) and the parameter values) are printed into the c44rms.dat-file and information on the fit (rms-error to the testing set, elastic moduli) are printed out.
 
 \textbf{readinaimd}\\
-This routine is called up by the dev2aimddft-routine (see Sec.\,\ref{Sec:Function:f4t:dev2aimd}) and reads in the positions and energies of the XDATCAR.dat and analyse.dat files, respectively, of the AIMD trajectories. It proceeds to produce a $6\times6$ surface cell from the data so the EMT-routine can be used to calculate the energy from the AIMD positions.
+This routine is called up by the dev2aimddft-routine (see Sec.\,\ref{Sec:Function:f4t:dev2aimd}) and reads in the positions and energy values of the XDATCAR.dat and analyse.dat files, respectively, of the AIMD trajectories. It proceeds to produce a $6\times6$ surface cell from the data so the EMT-routine can be used to calculate the energy from the AIMD positions.
 
 \textbf{restricted\_fit}\\
 \todo{restricted\_fit}
 
 \section{Force}
 \index{force}
-This module deals with the calculation of energies, forces and analytic derivatives of the PES usable in the program as well as the routine that calculates the friction coefficient from the local density. In general, the subroutines fall into three classes. The ones with a `1' at the end of the name deal with the calculation of only one species. Those with `\_e' at the end calculate only the energy without the forces and the ones with `d' (e.g. de or ddens) also includes routines to calculate the derivatives with respect to the parameters (see Tab.\,\ref{Tab:Funct:force}).
+This module deals with the calculation of energy values, forces and analytic derivatives of the PES usable in the program as well as the routine that calculates the friction coefficient from the local density. In general, the subroutines fall into three classes. The ones with a `1' at the end of the name deal with the calculation of only one species. Those with `\_e' at the end calculate only the energy without the forces and the ones with `d' (e.g. de or ddens) also includes routines to calculate the derivatives with respect to the parameters (see Tab.\,\ref{Tab:Funct:force}).
 
 \begin{table}[b!]
 \centering
-\caption{Subroutines in the force-module and what they calculate (BED = background electron density\index{BED}).\\
+\caption{Subroutines in the force-module and what they calculate.\\
 $^{(1)}$ only next neighbors included.\\
 $^{(2)}$ calculated numerically.\\
-$^{(3)}$ calculates the friction coefficient from the BED.}
+$^{(3)}$ calculates the friction coefficient from the background electron density (BED\index{BED}).}
 \label{Tab:Funct:force}
 \begin{tabular}{lllllll}
 \hline\hline
@@ -1350,23 +1374,27 @@ In the LDFA subroutine, the friction coefficient is calculated from the local ba
 
 \section{md\_init}
 \index{md\_init}
-This module is a monster. Tab.\,\ref{Tab:Funct:mdinit} gives an overview over the subroutines in the module and their purpose. In general, this module serves as an initialization module for (almost) everything that goes into the program. Due to this reason, it starts with a large block of global variable that need to be used in other modules as well.
+In general, this module serves as an initialization module for (almost) everything that goes into the program. Due to this reason, it starts with a large block of global variable that need to be used in other modules as well.
+It starts with the subroutine responsible for reading in the information required to run the program from the input file (\textit{simbox\_init}). The following subroutines are in charge of reading in and initializing the structures the program needs to perform the calculations. Tab.\,\ref{Tab:Funct:mdinit} gives an overview over the subroutines in the module and their purpose. 
+\textit{Please be aware that at this point, only one particle can be treated safely by the program. Simulations with more than one particle still show a number of bugs.}
 \begin{table}[b!]
 \centering
-\caption{Subroutines in the md\_init module and their purpse.}
+\caption{Subroutines in the md\_init module and their purpose.}
 \label{Tab:Funct:mdinit}
-\begin{tabular}{ll}
+\begin{tabular}{l p{12cm}}
 \hline\hline
 name			&purpose			\\
 \hline
 simbox\_init & read input file, calls up dependent on \textit{confname}\\
-read\_conf&\\
-prep\_slab&\\
-prep\_teil&\\
-read\_mxt&\\
-read\_fit&\\
-traj\_init&\\
-particle\_init&\\
+%\multirow{2}{*}{read\_conf}& reads in geometries \newline from POSCAR file, calls up prep\_slab and prep\_teil.\\
+read\_conf& reads geometries from POSCAR, initializes slab and teil type structures\newline
+calls: \textit{prep\_slab} and \textit{prep\_teil} \\
+prep\_slab& increase of slab size by repetition of slab, assigns velocities to slab atoms\\
+prep\_teil& repeat particle with cell if desired\\
+read\_mxt&reads configurations from mxt\_conf$n$.bin-files\\
+read\_fit&reads XDATCAR.dat, analyse.dat and energy\_eq.dat files and initializes fit. This includes repetition of the structures required for fit and adjustment of the corresponding potential energy values.\\
+traj\_init&reads in mxt\_conf$n$.bin files to initialize trajectories.\\
+particle\_init& Assign positions to the particle depending on \textit{pip} (see Tab.\,\ref{Tab:mxt:pip} and \ref{Tab:mxt:pip_keyword})\\
 
 \hline
 \hline
@@ -1390,7 +1418,8 @@ This routine contains the propagation algorithms divided into their first (propa
 \section{model and nllsq.f}
 \index{model}
 \index{nllsq.f}
-These modules is obsolete and should no longer exist; they are the first routines we used to calculate the non linear least square fitting routines. If you have them, you may keep them for reasons of nostalgia, but we would recommend not using them. Or if you have no Intel Fortran Compiler, but then, you will need to modify the code to include them (which you naturally may).
+These modules are obsolete and should no longer exist; they are the first routines we used to calculate the non linear least square fitting routines.
+They are only of use if you have no Intel Fortran Compiler, but the code needs to be modified to include them.
 \section{open\_file}
 \index{open\_file}
 This module contains the subroutines responsible for reading, writing and appending to files. Those subroutines are meant to facilitate the opening of files and print corresponding error messages that make file-opening errors more comprehensible.
@@ -1422,7 +1451,6 @@ out\_pdb		&mxt\_conf$n$.pdb	&medium\\
 \section{useful\_things}
 \index{useful\_things}
 This module contains useful subroutines returning random numbers, a normal function, turning input into lower-case characters, calculating the normed distance between two vectors, calculating the kinetic energy, periodic boundary conditions and a routine that counts the lines in a file.
-
 
 
 \chapter{Appendix}
@@ -1741,9 +1769,7 @@ comb_xdatcar.close()
 \end{lstlisting}
 
 
-
-\printindex
 \bibliography{theory_group} %"bib" ist der name der datei, die man angelegt hat!! 
-
+\printindex
 \end{document}
 

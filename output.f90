@@ -163,7 +163,8 @@ subroutine out_detail(output_info, n, itraj,Eref) !mxt_trj.dat
 
     call open_for_write(753,filename)
     write(753,'(1000A15)') 'time(fs)', 'E_pot(eV)', 'E_kin_l(eV)','E_kin_p(eV)',&
-                           'E_total(eV)', 'dens(A^-3)', 'r_p(A)', 'v_p(A/fs)'
+                           'E_total(eV)', 'dens(A^-3)', 'r_p(A)', 'v_p(A/fs)', &
+                           'eta_p (1/fs)'
 
     do i = 1, n
         write(753,'(10000e15.5)') i*wstep(2)*step, output_info(:,i)
