@@ -72,10 +72,9 @@
 \chapter{To do List}
 The following to-do-list contains all the things that still need to be added to the manual or need to be taken care of inside the program. This might not need to be the right place to put such a to-do-list, but at least, it will give the gentle reader an impression of which features are not documented or may be unsafe to use.\\
 \begin{itemize}
-\item \textbf{Manual} Write into manual at thermalization that a new step is needed where the file is first equilibrated at 0 K to make sure that $z=0$\,\AA~is indeed the layer of the surface atoms.
+\item \textbf{Manual} I'm not sure if the description of MD-simulations \&c should be more detailed. Please inform me (Svenja) if the descriptions given here are comprehensible or not.
 \item\textbf{Manual} Finish describing modules and subroutines in chapter\,\ref{Sec:Modules}.
 \item\textbf{Manual} Revise chapter Performing the Fit (chapter\,\ref{Sec:mxt:Fit:performing}) and After the Fit (chapter\,\ref{Sec:mxt:Fit:after}).
-\item\textbf{Manual} Describe in detail how fitting, md-simulations etc work and what files are needed for them.
 \item\textbf{Program} Finish inclusion of more than one particle (so far, only one atom can safely be treated in MD-simulations in the particle-structure, with more, some things go wrong) 
 \item\textbf{Program} Find out why reading in and mxt\_conf$n$.bin-file of a bulk slab-particle system after thermalization leads to a jump to exceedingly high energies
 \item\textbf{Program} Build in a way so the cell can relax in x,y,z-direction. Needed for bulk-diffusion simulations.
@@ -164,6 +163,7 @@ conf & geo & `address/file' & which configuration&\\
 \section{The Control File for MD simulations}
 Upon execution, the \textit{mdtianxia} program demands an input file which is the control file. It is usually named `md\_tian.inp' but its precise name has no influence on the program and it contains all the flags that are necessary to execute the program.
 \subsubsection{MD-simulations}
+\label{sec:mxt:control:MD}
 \begin{figure}[t!]
 \begin{minipage}{0.9\textwidth}
 \centering
@@ -338,6 +338,7 @@ Determines the type of the output file and when it is to be written. It will be 
 
 
 \subsection{Fitting Procedure}
+\label{sec:mxt:control:fit}
 The fitting procedure employed a Levenberg-Marquardt\,\cite{Levenberg1944,Marquardt1963} damped least squares procedure which minimizes the rms deviation of the energy values given by DFT and the EMT PES. Since I have used the fitting routine, the Levenberg-Marquardt damped least square procedure has been replaced with an Trusted Region Nonlinear Least Squares with Linear Bound Constrains procedure based on the Levenberg-Marquardt procedure from the Intel MKL libraries which allows fitting with constrains. Since I have used the fitting procedure, it has been improved using a genetic algorithm\,\cite{marvinmaster,marvinpc} whose description, since not relevant for the present thesis, will be omitted. A control file for the fit using this routine can be seen in Fig.\,\ref{Fig:mxt:fitting}, also to be used with MD\_tian. The flags in the control file that have not been mentioned in Section\,\ref{Sec:mxt:input} here are:\\
 
 \noindent\textbf{3Dgrid}\index{3Dgrid}\\
@@ -399,6 +400,7 @@ Strictly speaking, a routine is implemented into the program that allows fitting
 A number of input-files\todo{input fit} go along with the fit:
 
 \subsection{Surface Annealing}
+\label{sec:mxt:control:annealing}
 The MD\_tian allows to perform annealing simulations. An exemplary control file that was used to steer simulated annealing for a reconstructed Au surface is shown in Fig.\,\ref{Fig:mxt:anneal}. The flags that were not described above are those that control the annealing procedure.
 
 \textbf{anneal}\index{anneal}\\
@@ -1167,9 +1169,67 @@ Last but not least: form a circle of salt around your computer before starting t
 \todo{describe how to to MD simulations}
 \section{Slab preparation}
 \index{thermalization}
-For MD-simulations of particles scattering from surfaces, the surface needs to be prepared previous to the simulations
+\begin{figure}[t!]
+\centering
+\begin{verbatim}
+1 start 1
+2 ntrajs 1
+3 Tsurf 300
+4 step 1
+5 nsteps 50001
+6 wstep 50000 1
+7 lattice   Au 196.96657 7 emt515_Au.nml ver -3
+8 pes emt
+9 celldim 2 2 6 none 
+10 rep 1 1
+11 conf POSCAR au111_2x2x6.POSCAR
+\end{verbatim}
 
-\chapter{Simulated Annealing}
+\caption{\label{Fig:mxt:MD:prep_input}An exemplary control files used in MD\_tian to create one configuration of an equilibrated Au slab at 300\,K. For convenience, the line numbers are given. They have to be removed if this file is to be used for simulations.}
+\end{figure}
+
+For MD-simulations of particles scattering from surfaces, the surface needs to be prepared previous to the simulations. This has the purpose of relaxing the slab in $z$-direction and equilibrating the slab to the desired temperature. The slab equilibration uses control files of the form shown in Fig.\,\ref{Fig:mxt:MD:prep_input}. Before the actual thermalization can be started, the slab first needs to be relaxed in $z$-direction (`equilibrated' to 0\,K). For this purpose, \textit{wstep} in Fig.\,\ref{Fig:mxt:thermalization}, top, needs to be set to (\textit{wstep} -3 1) and (\textit{Tsurf} 0). The POSCAR-file that is produced at the end of the trajectory can be found in the `traj' directory produced by the program. The POSCAR-file then needs to be opened and the $z$-coordinate of the atoms of the first layer subtracted from all other $z$-coordinates to make sure that the surface atoms are located at $z$=0.0\,\AA. This file can then be used for all subsequent equilibrations. The next step is to check if the slab equilibrates to the correct temperature. For this purpose, line 6 in Fig.\,\ref{Fig:mxt:MD:prep_input} needs to be modified to (\textit{wstep} 0 1). In line 3, the correct temperature must naturally be added. The resulting input-file is to be used together with the new POSCAR-file. An mxt\_trj$n$.dat-file results from the simulation and can be found in the `traj'-directory. From the kinetic energy of the slab atoms (column three), the temperature the slab equilibrates to can be extracted. If the slab equilibrates roughly to the correct temperature, in the next step, the input file as shown in Fig.\,\ref{Fig:mxt:MD:prep_input} can be used together with the prepared POSCAR-file as input. This simulation produces a mxt\_conf$n$.bin-file that can be found in the directory `conf'. From this file, a further number of mxt\_conf$n$.bin can be produced so that an MD-simulation has a number of different slab-configurations to chose from. An exemplary file for producing 1000 slab-configuration files can be found in Fig.\,\ref{Fig:mxt:thermalization}, bottom.
+
+\section{MD-simulations}
+\begin{figure}[b!]
+\centering
+\begin{verbatim}
+1 start 1
+2 ntrajs 1
+3 step 0.1
+4 nsteps 10000
+5 wstep -1 1
+6 Einc 3.33
+7 inclination 45
+8 azimuth 60
+9 pes emt
+10 projectile H   1.0079  7 emt515_H.nml lan  1
+11 conf mxt "/home/theory/mxt/thermalisation/p515_ver_6x6x4_T300/conf" 1000
+12 pip 0 6.0
+\end{verbatim}
+\caption{\label{Fig:mxt:MDsimulation}A control file used in MD\_tian for a typical MD-simulation. The line numbers are given for convenience sake and need to be removed for simulations.}
+MD-simulations that are supposed to calculate more than a single trajectory need mxt\_conf$n$.bin-files as input. The mxt\_fin$n$.dat-files can be evaluated with another program that is available form us.
+
+\section{Simulated Annealing}
+\begin{figure}[b!]
+\begin{verbatim}
+1 start 1
+2 Tsurf 0
+3 step 1
+4 nsetps 100000
+5 wstep 0 1
+6 lattice Au 196.96657 7 emt515_Au.nml lan -3
+7 pes emt
+8 rep 0 1
+9 celldim 22 2 6 atlayer 46 44 44 44 44 44
+10 conf POSCAR 'rec_au111_22x2x6.POSCAR'
+11 anneal 700 500
+12 ntrajs 20
+\end{verbatim}
+\caption{\label{Fig:mxt:anneal}An exemplary control file for annealing simulations with MD\_tian for a slab with a reconstructed surface that has one extra atom per discommensuration line. The line numbers are given for convenience sake and need to be removed for simulations.}
+\end{figure}
+Surface annealing should also allow to place particles on the surface, however, this has not been tested, yet. The parameters that go along with the annealing simulations are explained in section\,\ref{sec:mxt:control:annealing}.
+
 
 \chapter{Skycruiser}
 Skycruiser is Genetic Algorithm wrapper script to the md\_tian program. It fully automatizes the fitting of a Potential Energy Surface. Without this script, the only part in the entire procedure that lacked a systematic approach is the actual tuning of the EMT parameter set itself. The problem is the following: on the one hand, md\_tian uses a gradient descend method to minimize the root mean square error between EMT and DFT reference energy values. On the other hand, there are seven parameters per atomic species in EMT which enable the PES to be applicable to a large variety of systems, but even the most sophisticated nonlinear least squares fitting routine does not perform well in such a high dimensional environment. In the best case, it simply does not find the global minimum, but most of the time, the routine yields a PES which is far from being physically reasonable. It might, for example, not fulfill the elastic stability criteria or let the metal disintegrate at a ridiculous temperature, among other exasperating problems.
