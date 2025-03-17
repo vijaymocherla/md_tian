@@ -126,7 +126,6 @@ do itraj = start_tr, ntrajs+start_tr-1
     densmin     = 1.0d0
     densmax     = 10.0d0
     pEfric      = 0.0d0
-
 ! Skip initialisation routine for Annealing after 1st trajectory
     if ((sasteps > 0) .and. (itraj > 1)) then
 
@@ -134,7 +133,6 @@ do itraj = start_tr, ntrajs+start_tr-1
 ! Initialising all variables for start of new trajectory
         if (confname == 'mxt' .or. confname == 'geo') &
             call traj_init(slab, teil, Eref)
-
         if (teil%n_atoms > 0) then
             call particle_init(teil)
             select case (pes_key)
@@ -155,7 +153,6 @@ do itraj = start_tr, ntrajs+start_tr-1
                             (teil%v(1,i)**2+teil%v(2,i)**2+teil%v(3,i)**2)/imass_p!*step
                 end do
             end if
-
         else
             select case (pes_key)
                 case (0)
@@ -164,7 +161,6 @@ do itraj = start_tr, ntrajs+start_tr-1
      !               call  lj1(slab)
             end select
         end if
-
         if (md_algo_l == 3 .or. md_algo_l == 4 ) call ldfa(slab, imass_l)
         slab%a  = slab%f*imass_l
         slab%ao = slab%a
@@ -175,7 +171,6 @@ do itraj = start_tr, ntrajs+start_tr-1
                                          itraj, 0, rmin_p, col_end, imp, rbounce)
         tock = teil%v
     endif
-
     !print *, 'ntraj', itraj
     !timing
     !call cpu_time(start)
@@ -187,17 +182,16 @@ do itraj = start_tr, ntrajs+start_tr-1
 !
 !------------------------------------------------------------------------------
     do q = 1, nsteps
-!        print *, q
-
-!--------------------- SIMULATED ANNEALING ROUTINE ----------------------------
-
+        !        print *, q
+        
+        !--------------------- SIMULATED ANNEALING ROUTINE ----------------------------
+        
         if (sasteps > 0 .and. mod(q,sasteps) == 1) then
-            Tsurf = Tmax - (Tmax-Tmin) * abs(2.0d0*(q + sasteps - 1)/nsteps - 1.0d0)
+            Tsurf = Tmax - (Tmax-Tmin) * abs(2.0d0*(q + sasteps - 1)/(nsteps) - 1.0d0)
             if (Tsurf < 0) Tsurf = 0
         endif
-
-!----------------------- PROPAGATION ROUTINE ----------------------------------
-
+        
+        !----------------------- PROPAGATION ROUTINE ----------------------------------
         call propagator_1(slab, md_algo_l, imass_l)         ! slab kick-drift
 
         if (teil%n_atoms > 0) then
@@ -209,7 +203,8 @@ do itraj = start_tr, ntrajs+start_tr-1
 !                   call  lj(slab,teil)
 	    end select
 	    eed = teil%dens                                 ! keep electron density values
-	    call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
+
+        call propagator_2(teil, md_algo_p, imass_p)     ! projectile kick
 
             ! collect only contribution due to adiabatic effects
             ! to be able to tell how much goes into ehp and phonons

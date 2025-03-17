@@ -100,7 +100,7 @@ module md_init
 
     ! Annealing
     real(8) :: Tmin, Tmax
-    integer :: sasteps = 0
+    integer :: sasteps = 1 ! this shouldn't be zero
 
 contains
 

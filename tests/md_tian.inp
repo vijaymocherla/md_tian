@@ -1,0 +1,15 @@
+start 1
+ntrajs 2
+step 0.01
+nsteps 1
+wstep 0 1
+Einc 3.33
+inclination 45
+azimuth 60
+pes emt
+projectile H   1.0079  7 emt_stroem_H.nml lan  1
+lattice   Au 196.96657 7 emt_stroem_Au.nml ver -3
+rep 1 1
+celldim 2 2 4 none
+conf POSCAR 'au111_2x2x4.POSCAR'
+pip 0 6.0
