@@ -40,19 +40,16 @@ else()
 endif()
 
 add_executable(md_tian.x
-    # src/md_tian.f90
-	src/atom_class.f90
-	src/dtrnlspbc.f90
-	src/evalulation.f90
-	src/fit4_tian.f90
-	src/force.f90
-	src/mdalgo.f90
-	src/md_init.f90
-	src/model.f90
-	src/nllsq_dbl.f
-	src/open_file.f90
-	src/output.f90
-	src/useful_things.f90
+    src/open_file.f90 
+    src/atom_class.f90 
+    src/useful_things.f90
+    src/md_init.f90 
+    src/force.f90 
+    src/dtrnlspbc.f90 
+    src/fit4_tian.f90 
+    src/mdalgo.f90 
+    src/output.f90 
+    src/md_tian.f90
 )
 
 target_link_libraries(md_tian.x ${libraries})
