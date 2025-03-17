@@ -1,3 +1,7 @@
+#mdt files 
+*.POSCAR
+*.dat
+*.x
 # Prerequisites
 *.d
 
