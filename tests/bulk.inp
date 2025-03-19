@@ -1,0 +1,10 @@
+start 1
+ntrajs 1
+step 0.1
+nsteps 1
+wstep 0 1
+pes emt
+lattice   Au 196.96657 7 emt_stroem_Au.nml ver  -3
+rep 0 0
+celldim 6 3 6 none
+conf POSCAR 'bulk_Au111_6x3x6.POSCAR'

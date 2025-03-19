@@ -55,6 +55,7 @@ subroutine emt(slab, teil)
     real(8), dimension(:,:,:), allocatable :: dsigma_ll, dsigma_lp_p
     real(8), dimension(:,:,:), allocatable :: dsigma_pp, dsigma_pl_l
     real(8), dimension(:,:,:), allocatable :: ds_l_l, ds_p_p, ds_l_p, ds_p_l
+    
 
 !----------------------VALUES OF FREQUENT USE ---------------------------------
 
@@ -71,7 +72,9 @@ subroutine emt(slab, teil)
     ! 'coupling' parameters between p and l
     chilp = pars_p(2) / pars_l(2) *exp(0.5d0/bohr2ang*(pars_l(7)-pars_p(7)))
     chipl = 1.0d0 / chilp
-
+    print*, "chi_lp", chilp 
+    print*, "chi_pl", chipl
+    print*, "chi_ll, chi_pp", 1.0d0, 1.0d0
     ! Distances to the nearest, next-nearest and next-next-nearest neighbours
     rnnl(1) = betas0_l
     rnnl(2) = rnnl(1) * sqrt2
@@ -92,21 +95,29 @@ subroutine emt(slab, teil)
     !rcut = a_lat * sqrt3 * isqrt2
     rr = 4 * rcut / (sqrt3 + 2.0d0)
     acut = 9.210240d0/(rr -rcut) ! ln(10000)
-
+    print*, "rcut", rcut
+    print*, "rr", rr
+    print*, "acut", acut
     xl = b * twelfth / (1.0d0 + exp(acut*(rnnl-rcut)))
     xp = b * twelfth / (1.0d0 + exp(acut*(rnnp-rcut)))
-
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
 
     r3temp = rnnl - betas0_l
+    ! print*, "r3temp_L", r3temp
     igamma1l = 1.0d0 / sum(xl*exp(   -pars_l(1) * r3temp))
     igamma2l = 1.0d0 / sum(xl*exp(-kappadbeta_l * r3temp))
 
     r3temp = rnnp - betas0_p
+    ! print*, "r3temp_P", r3temp
     igamma1p = 1.0d0 / sum(xp*exp(   -pars_p(1) * r3temp))
     igamma2p = 1.0d0 / sum(xp*exp(-kappadbeta_p * r3temp))
+    print*, "gamma1", 1/igamma1l, 1/igamma1p
+    print*, "gamma2", 1/igamma2l, 1/igamma2p
+
+    ! print*, "x", xp
+    ! print*, "gamma2_exp", exp(-kappadbeta_p * r3temp)
 
 !------------------------------------------------------------------------------
 !                          Sigma and Pair-wise Contributions
@@ -161,8 +172,9 @@ subroutine emt(slab, teil)
     dvref_l_p   = 0.0d0
     dvref_p_l   = 0.0d0
     dvref_p_p   = 0.0d0
-
     ! slab-slab
+    print*, cutoff*rcut
+    print*, slab%r(:,:)
     do i = 1, slab%n_atoms
         do j = i+1, slab%n_atoms
 
@@ -176,9 +188,9 @@ subroutine emt(slab, teil)
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
-
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
+            print*, i, j, r
 
             r3temp = r3temp/r                       ! unit vector j -> i
 
@@ -212,8 +224,9 @@ subroutine emt(slab, teil)
 
             ! Applying PBCs
             r3temp = teil%r(:,i) - teil%r(:,j)   ! distance vector
+            r3temp = -r3temp
             r3temp = matmul(cell_imat, r3temp)           ! transform to direct coordinates
-
+             
             r3temp(1) = r3temp(1) - Anint(r3temp(1))! imaging
             r3temp(2) = r3temp(2) - Anint(r3temp(2))
             r3temp(3) = r3temp(3) - Anint(r3temp(3))
@@ -308,6 +321,7 @@ subroutine emt(slab, teil)
         end do
     end do
 
+
     ! divide by cut-off scaling factors
     sigma_ll = sigma_ll*igamma1l
     V_ll     =     V_ll*igamma2l*pars_l(5)
@@ -331,6 +345,17 @@ subroutine emt(slab, teil)
     dV_pl_l     =     dV_pl_l*igamma2p*pars_p(5)*chipl
     dV_pl_p     =     dV_pl_p*igamma2p*pars_p(5)*chipl
 
+    print*, "For slab-slab"
+    print*, "sigma_ll", sigma_ll
+    print*, "dsigma_ll", dsigma_ll
+    print*, "  "
+    print*, "For teil-teil"
+    print*, "sigma_pp", sigma_pp
+    print*, "dsigma_pp", dsigma_pp
+    print*, "  "
+    print*, "For teil-slab"
+    print*, "sigma_lp", sigma_lp
+    print*, "sigma_pl", sigma_pl
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 
     s_l = sigma_ll + chilp*sigma_lp
@@ -366,7 +391,11 @@ subroutine emt(slab, teil)
 
     s_l = -log(s_l*twelfth)/betaeta2_l
     s_p = -log(s_p*twelfth)/betaeta2_p
-
+    print*, "neutral sphere radius"
+    print*, "s_l", s_l
+    print*, "  "
+    print*, "s_p", s_p
+    print*, "  "
 !----------------------EMBEDDED ELECTRON DENSITY-------------------------------
 
     rtemp = 0.5d0/bohr2ang - betaeta2_l     ! -eta_l
@@ -781,11 +810,11 @@ subroutine emt1(s)
 !-----------------------------------GAMMA--------------------------------------
 ! Gamma enforces the cut-off together with theta (see below)
 ! Gamma is defined as inverse.
-
+    print*, rr, rcut, acut
     r3temp = rnnl - betas0_l
     igamma1l = 1.0d0 / sum(xl*exp(   -pars_l(1) * r3temp))
     igamma2l = 1.0d0 / sum(xl*exp(-kappadbeta_l * r3temp))
-
+    print*, "gammas", 1/igamma1l, 1/igamma2l
 !------------------------------------------------------------------------------
 !                          Sigma and Pair-wise Contributions
 !                          =================================
@@ -802,8 +831,14 @@ subroutine emt1(s)
     dsigma_ll   = 0.0d0
     dV_ll_l     = 0.0d0
     dvref_l_l   = 0.0d0
+    print*, "cell_imat"
+    print*, cell_mat
 
+    print*, "cell_imat"
+    print*, cell_imat
+    print*, "natoms in slab", s%n_atoms
     do i = 1, s%n_atoms
+        print*, "here here!"
         do j = i+1, s%n_atoms
 
             ! Applying PBCs
@@ -815,10 +850,12 @@ subroutine emt1(s)
             r3temp    = matmul(cell_mat, r3temp)    ! back to cartesian coordinates
 
             r =  sqrt(sum(r3temp**2))               ! distance
-
+            
             ! drops atoms outside (cutoff*rcut)-sphere
             if (r > cutoff*rcut) cycle
-
+            print*,"here here "
+            print*, i, j, r
+            
             r3temp = r3temp/r                       ! unit vector j -> i
 
             ! cut-off function
@@ -852,7 +889,9 @@ subroutine emt1(s)
 
     dsigma_ll   = dsigma_ll  *igamma1l
     dV_ll_l     =     dV_ll_l*igamma2l*pars_l(5)
-
+    print*, "sigma_ll", sigma_ll
+    print*, "dsigma_ll", dsigma_ll
+    print*, "  "
 !-----------------------------NEUTRAL SPHERE RADIUS----------------------------
 
     s_l = sigma_ll
@@ -864,8 +903,9 @@ subroutine emt1(s)
         ds_l_l(3,i,:) = ds_l_l(3,i,:)/(betaeta2_l*s_l)
     end do
 
-    s_l = -log(s_l*twelfth)/betaeta2_l
-
+    s_l = -log(max(tolerance, s_l)*twelfth)/betaeta2_l
+    print*, "neutral sphere radius"
+    print*, "s_l", s_l 
 !----------------------EMBEDDED ELECTRON DENSITY-------------------------------
 
     rtemp = 0.5d0/bohr2ang - betaeta2_l     ! -eta_l

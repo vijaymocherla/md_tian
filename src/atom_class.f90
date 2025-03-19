@@ -21,6 +21,7 @@ module atom_class
     real(8), parameter          :: kB       = 8.61733238496d-5
     real(8), parameter          :: hbar     = 0.6582119280967d0
     real(8), parameter          :: twelfth  = 1.0d0/12.0d0
+    real(8), parameter          :: tolerance = 1.0e-9
     integer, parameter          :: randseed(13)   = (/8,6,7,5,3,11,9,1,17,2,9,6,4/)
     real(8), parameter          :: e_max    = 20.0d0
     real(8), parameter          :: e_max_aimd= 100.0d0 ! cut-off for fitting aimd-input-data-set

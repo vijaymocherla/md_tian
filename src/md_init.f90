@@ -253,6 +253,8 @@ distmima=(/0.0d0,7.0d0/)
                 close(23)
             case ('celldim')
                 read(buffer, *, iostat=ios) celldim, celln
+                ! celln is the number of atoms in the adlayer if any
+                ! used for allocatting array positions
                 call lower_case(celln)
                 if (celln == 'atlayer') then
                     allocate(nr_at_layer(celldim(3)))
